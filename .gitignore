@@ -34,7 +34,9 @@ token_estimator_test.go
 
 # Local release/build artifacts
 .artifacts/
+*.tar
 *.tar.gz
+*.tgz
 *.zip
 
 # Local deployment overrides
@@ -46,5 +48,5 @@ web/vite.config.js.timestamp-*.mjs
 # Local design/export assets
 img/
 
-# Local Apifox upload package
-docs/apifox/
+# Local/generated documentation
+docs/
