@@ -1,6 +1,6 @@
 <div align="center">
 
-![jimu-new-api](https://ai.yiqiu.dev/logo2.png)
+<img src="https://ai.yiqiu.dev/logo2.png" alt="jimu-new-api" width="120" />
 
 # jimu-new-api
 
