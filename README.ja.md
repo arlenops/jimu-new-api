@@ -1,4 +1,4 @@
-# New API secondary development edition
+# jimu-new-api
 
 The Japanese README is not maintained separately yet. Please refer to [README.md](./README.md).
 

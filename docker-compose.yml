@@ -1,4 +1,4 @@
-# New API open-source Docker Compose example.
+# jimu-new-api open-source Docker Compose example.
 #
 # Quick start:
 #   docker compose up -d --build
@@ -14,8 +14,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: new-api:local
-    container_name: new-api
+    image: jimu-new-api:local
+    container_name: jimu-new-api
     restart: unless-stopped
     command: --log-dir /app/logs
     ports:
@@ -53,14 +53,14 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: new-api-redis
+    container_name: jimu-new-api-redis
     restart: unless-stopped
     networks:
       - new-api-network
 
   postgres:
     image: postgres:15-alpine
-    container_name: new-api-postgres
+    container_name: jimu-new-api-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: newapi

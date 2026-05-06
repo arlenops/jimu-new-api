@@ -1,10 +1,10 @@
 <div align="center">
 
-![new-api](/web/public/logo.png)
+![jimu-new-api](https://ai.yiqiu.dev/logo2.png)
 
-# New API 二次开发版
+# jimu-new-api
 
-基于 [QuantumNous/new-api](https://github.com/QuantumNous/new-api) 与 [One API](https://github.com/songquanpeng/one-api) 的 AI API 网关、计费与控制台系统。
+基于 [QuantumNous/new-api](https://github.com/QuantumNous/new-api) 与 [One API](https://github.com/songquanpeng/one-api) 二次开发的 AI API 网关、计费与控制台系统。
 
 [AGPLv3](./LICENSE) · [快速开始](#快速开始) · [配置说明](#配置说明) · [开源许可](#开源许可)
 
@@ -12,7 +12,7 @@
 
 ## 项目说明
 
-本仓库是一个面向自部署场景的 New API 二次开发版本，用于聚合多个上游 AI 服务，并提供统一的 API 入口、用户管理、令牌管理、用量统计、计费、订阅、推广返佣和管理后台。
+`jimu-new-api` 是一个面向自部署场景的 New API 二次开发版本，用于聚合多个上游 AI 服务，并提供统一的 API 入口、用户管理、令牌管理、用量统计、计费、订阅、推广返佣和管理后台。
 
 本项目保留并尊重上游项目的名称、作者与许可证信息：
 
@@ -89,12 +89,12 @@ bun run dev
 ### 手动构建 Docker 镜像
 
 ```bash
-docker build -t new-api:local .
-docker run --name new-api -d --restart always \
+docker build -t jimu-new-api:local .
+docker run --name jimu-new-api -d --restart always \
   -p 3000:3000 \
   -e TZ=Asia/Shanghai \
   -v ./data:/data \
-  new-api:local
+  jimu-new-api:local
 ```
 
 ## 配置说明

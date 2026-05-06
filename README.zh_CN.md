@@ -1,4 +1,4 @@
-# New API 二次开发版
+# jimu-new-api
 
 中文说明请以 [README.md](./README.md) 为准。
 
