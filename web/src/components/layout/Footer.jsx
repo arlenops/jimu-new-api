@@ -29,6 +29,7 @@ const FooterBar = () => {
   const [footer, setFooter] = useState(getFooterHTML());
   const systemName = getSystemName();
   const logo = getLogo();
+  const jimuRepoUrl = 'https://github.com/arlenops/jimu-new-api';
   const [statusState] = useContext(StatusContext);
   const location = useLocation();
   const isDemoSiteMode = statusState?.status?.demo_site_enabled || false;
@@ -225,7 +226,7 @@ const FooterBar = () => {
 
           <div className='text-sm'>
             <span className={mutedTextClass}>
-              {t('设计与开发由')}{' '}
+              {t('基于')}{' '}
             </span>
             <a
               href='https://github.com/QuantumNous/new-api'
@@ -234,6 +235,18 @@ const FooterBar = () => {
               className={linkClass}
             >
               New API
+            </a>
+            <span className={mutedTextClass}>
+              {' '}
+              {t('二次开发')} ·{' '}
+            </span>
+            <a
+              href={jimuRepoUrl}
+              target='_blank'
+              rel='noopener noreferrer'
+              className={linkClass}
+            >
+              {t('Jimu New API 已开源')}
             </a>
           </div>
         </div>
@@ -244,6 +257,7 @@ const FooterBar = () => {
       footerWrapClass,
       headingClass,
       isDemoSiteMode,
+      jimuRepoUrl,
       linkClass,
       logo,
       mutedTextClass,
@@ -269,7 +283,7 @@ const FooterBar = () => {
             ></div>
             <div className='text-sm flex-shrink-0'>
               <span className={mutedTextClass}>
-                {t('设计与开发由')}{' '}
+                {t('基于')}{' '}
               </span>
               <a
                 href='https://github.com/QuantumNous/new-api'
@@ -278,6 +292,18 @@ const FooterBar = () => {
                 className={linkClass}
               >
                 New API
+              </a>
+              <span className={mutedTextClass}>
+                {' '}
+                {t('二次开发')} ·{' '}
+              </span>
+              <a
+                href={jimuRepoUrl}
+                target='_blank'
+                rel='noopener noreferrer'
+                className={linkClass}
+              >
+                {t('Jimu New API 已开源')}
               </a>
             </div>
           </div>

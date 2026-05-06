@@ -32,6 +32,7 @@ const About = () => {
   const [about, setAbout] = useState('');
   const [aboutLoaded, setAboutLoaded] = useState(false);
   const currentYear = new Date().getFullYear();
+  const jimuRepoUrl = 'https://github.com/arlenops/jimu-new-api';
 
   const displayAbout = async () => {
     setAbout(localStorage.getItem('about') || '');
@@ -128,6 +129,17 @@ const About = () => {
           {t('AGPL v3.0协议')}
         </a>
         {t('的前提下使用。')}
+      </p>
+      <p>
+        {t('Jimu New API 是基于 New API 的二次开发版本，源码已开源：')}
+        <a
+          href={jimuRepoUrl}
+          target='_blank'
+          rel='noopener noreferrer'
+          className='!text-semi-color-primary'
+        >
+          {jimuRepoUrl}
+        </a>
       </p>
     </div>
   );
