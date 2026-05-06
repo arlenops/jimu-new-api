@@ -26,6 +26,7 @@ import {
   Button,
   Banner,
   Skeleton,
+  Select,
   Form,
   Space,
   Row,
@@ -44,6 +45,7 @@ import {
   TrendingUp,
   Receipt,
   Sparkles,
+  RefreshCw,
 } from 'lucide-react';
 import { IconGift } from '@douyinfe/semi-icons';
 import { useMinimumLoadingTime } from '../../hooks/common/useMinimumLoadingTime';
@@ -51,6 +53,118 @@ import { getCurrencyConfig } from '../../helpers/render';
 import SubscriptionPlansCard from './SubscriptionPlansCard';
 
 const { Text } = Typography;
+
+const BillingPreferenceControl = ({
+  t,
+  billingPreference,
+  onChangeBillingPreference,
+  activeSubscriptions = [],
+  allSubscriptions = [],
+  reloadSubscriptionSelf,
+}) => {
+  const [refreshing, setRefreshing] = useState(false);
+  const hasActiveSubscription = activeSubscriptions.length > 0;
+  const isSubscriptionPreference =
+    billingPreference === 'subscription_first' ||
+    billingPreference === 'subscription_only';
+  const disableSubscriptionPreference = !hasActiveSubscription;
+  const displayBillingPreference =
+    disableSubscriptionPreference && isSubscriptionPreference
+      ? 'wallet_first'
+      : billingPreference;
+  const subscriptionPreferenceLabel =
+    billingPreference === 'subscription_only' ? t('仅用订阅') : t('优先订阅');
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await reloadSubscriptionSelf?.();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  return (
+    <div className='mb-4 overflow-hidden rounded-2xl border border-[rgba(15,23,42,0.08)] bg-[linear-gradient(135deg,rgba(255,255,255,0.96),rgba(247,252,249,0.86))] px-4 py-3 shadow-[0_16px_34px_-34px_rgba(15,23,42,0.18),inset_0_1px_0_rgba(255,255,255,0.92)]'>
+      <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
+        <div className='min-w-0'>
+          <div className='mb-1 flex flex-wrap items-center gap-2'>
+            <span className='text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500'>
+              {t('结算')}
+            </span>
+            {hasActiveSubscription ? (
+              <Tag color='white' size='small' shape='circle'>
+                {activeSubscriptions.length} {t('个生效中')}
+              </Tag>
+            ) : (
+              <Tag color='white' size='small' shape='circle'>
+                {t('无生效')}
+              </Tag>
+            )}
+            {allSubscriptions.length > activeSubscriptions.length && (
+              <Tag color='white' size='small' shape='circle'>
+                {allSubscriptions.length - activeSubscriptions.length}{' '}
+                {t('个已过期')}
+              </Tag>
+            )}
+          </div>
+          <Text className='!text-sm !leading-5 !text-slate-600'>
+            {t(
+              '已购订阅会在有效期内自动提供额度与分组权益，你可以随时切换订阅和钱包的结算优先级。',
+            )}
+          </Text>
+          {disableSubscriptionPreference && isSubscriptionPreference && (
+            <div className='mt-2 inline-flex rounded-full border border-[rgba(0,178,107,0.14)] bg-[rgba(0,178,107,0.08)] px-3 py-1 text-xs text-[var(--va-accent)]'>
+              {t('已保存偏好为')}
+              {subscriptionPreferenceLabel}
+              {t('，当前无生效订阅，将自动使用钱包')}
+            </div>
+          )}
+        </div>
+
+        <div className='flex shrink-0 flex-wrap items-center gap-2 rounded-full border border-[rgba(0,178,107,0.12)] bg-[rgba(255,255,255,0.86)] px-2 py-1 shadow-[0_12px_30px_-24px_rgba(0,178,107,0.42),inset_0_1px_0_rgba(255,255,255,0.9)]'>
+          <Select
+            value={displayBillingPreference}
+            onChange={onChangeBillingPreference}
+            size='small'
+            optionList={[
+              {
+                value: 'subscription_first',
+                label: disableSubscriptionPreference
+                  ? `${t('优先订阅')} (${t('无生效')})`
+                  : t('优先订阅'),
+                disabled: disableSubscriptionPreference,
+              },
+              { value: 'wallet_first', label: t('优先钱包') },
+              {
+                value: 'subscription_only',
+                label: disableSubscriptionPreference
+                  ? `${t('仅用订阅')} (${t('无生效')})`
+                  : t('仅用订阅'),
+                disabled: disableSubscriptionPreference,
+              },
+              { value: 'wallet_only', label: t('仅用钱包') },
+            ]}
+          />
+          <Button
+            size='small'
+            theme='borderless'
+            type='tertiary'
+            className='!text-slate-500'
+            icon={
+              <RefreshCw
+                size={12}
+                className={refreshing ? 'animate-spin' : ''}
+              />
+            }
+            onClick={handleRefresh}
+            loading={refreshing}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const RechargeCard = ({
   standalone = false,
@@ -101,18 +215,14 @@ const RechargeCard = ({
 }) => {
   const onlineFormApiRef = useRef(null);
   const redeemFormApiRef = useRef(null);
-  const initialTabSetRef = useRef(false);
   const showAmountSkeleton = useMinimumLoadingTime(amountLoading);
   const [activeTab, setActiveTab] = useState('topup');
   const shouldShowSubscription =
     !subscriptionLoading && subscriptionPlans.length > 0;
-
-  useEffect(() => {
-    if (initialTabSetRef.current) return;
-    if (subscriptionLoading) return;
-    setActiveTab(shouldShowSubscription ? 'subscription' : 'topup');
-    initialTabSetRef.current = true;
-  }, [shouldShowSubscription, subscriptionLoading]);
+  const shouldShowBillingPreference =
+    shouldShowSubscription ||
+    activeSubscriptions.length > 0 ||
+    allSubscriptions.length > 0;
 
   useEffect(() => {
     if (!shouldShowSubscription && activeTab !== 'topup') {
@@ -144,13 +254,13 @@ const RechargeCard = ({
       <Card
         className={`!rounded-xl w-full ${standalone ? 'va-wallet-feature-card' : ''}`}
         cover={
-          <div
-            className='relative h-30'
-            style={summaryCoverStyle}
-          >
-              <div className='relative z-10 h-full flex flex-col justify-between p-4'>
-                <div className='flex justify-between items-center'>
-                <Text strong style={{ color: standaloneTitleColor, fontSize: '16px' }}>
+          <div className='relative h-30' style={summaryCoverStyle}>
+            <div className='relative z-10 h-full flex flex-col justify-between p-4'>
+              <div className='flex justify-between items-center'>
+                <Text
+                  strong
+                  style={{ color: standaloneTitleColor, fontSize: '16px' }}
+                >
                   {t('账户统计')}
                 </Text>
               </div>
@@ -241,7 +351,10 @@ const RechargeCard = ({
           <div className='py-8 flex justify-center'>
             <Spin size='large' />
           </div>
-        ) : enableOnlineTopUp || enableStripeTopUp || enableCreemTopUp || enableWaffoTopUp ? (
+        ) : enableOnlineTopUp ||
+          enableStripeTopUp ||
+          enableCreemTopUp ||
+          enableWaffoTopUp ? (
           <Form
             getFormApi={(api) => (onlineFormApiRef.current = api)}
             initValues={{ topUpCount: topUpCount }}
@@ -253,7 +366,11 @@ const RechargeCard = ({
                     <Form.InputNumber
                       field='topUpCount'
                       label={t('充值数量')}
-                      disabled={!enableOnlineTopUp && !enableStripeTopUp && !enableWaffoTopUp}
+                      disabled={
+                        !enableOnlineTopUp &&
+                        !enableStripeTopUp &&
+                        !enableWaffoTopUp
+                      }
                       placeholder={
                         t('充值数量，最低 ') + renderQuotaWithAmount(minTopUp)
                       }
@@ -305,73 +422,78 @@ const RechargeCard = ({
                       style={{ width: '100%' }}
                     />
                   </Col>
-                  {payMethods && payMethods.filter(m => m.type !== 'waffo').length > 0 && (
-                  <Col xs={24} sm={24} md={24} lg={14} xl={14}>
-                    <Form.Slot label={t('选择支付方式')}>
-                        <Space wrap>
-                          {payMethods.filter(m => m.type !== 'waffo').map((payMethod) => {
-                            const minTopupVal = Number(payMethod.min_topup) || 0;
-                            const isStripe = payMethod.type === 'stripe';
-                            const disabled =
-                              (!enableOnlineTopUp && !isStripe) ||
-                              (!enableStripeTopUp && isStripe) ||
-                              minTopupVal > Number(topUpCount || 0);
+                  {payMethods &&
+                    payMethods.filter((m) => m.type !== 'waffo').length > 0 && (
+                      <Col xs={24} sm={24} md={24} lg={14} xl={14}>
+                        <Form.Slot label={t('选择支付方式')}>
+                          <Space wrap>
+                            {payMethods
+                              .filter((m) => m.type !== 'waffo')
+                              .map((payMethod) => {
+                                const minTopupVal =
+                                  Number(payMethod.min_topup) || 0;
+                                const isStripe = payMethod.type === 'stripe';
+                                const disabled =
+                                  (!enableOnlineTopUp && !isStripe) ||
+                                  (!enableStripeTopUp && isStripe) ||
+                                  minTopupVal > Number(topUpCount || 0);
 
-                            const buttonEl = (
-                              <Button
-                                key={payMethod.type}
-                                theme='outline'
-                                type='tertiary'
-                                onClick={() => preTopUp(payMethod.type)}
-                                disabled={disabled}
-                                loading={
-                                  paymentLoading && payWay === payMethod.type
-                                }
-                                icon={
-                                  payMethod.type === 'alipay' ? (
-                                    <SiAlipay size={18} color='#1677FF' />
-                                  ) : payMethod.type === 'wxpay' ? (
-                                    <SiWechat size={18} color='#07C160' />
-                                  ) : payMethod.type === 'stripe' ? (
-                                    <SiStripe size={18} color='#635BFF' />
-                                  ) : (
-                                    <CreditCard
-                                      size={18}
-                                      color={
-                                        payMethod.color ||
-                                        'var(--semi-color-text-2)'
-                                      }
-                                    />
-                                  )
-                                }
-                                className='!rounded-lg !px-4 !py-2'
-                              >
-                                {payMethod.name}
-                              </Button>
-                            );
+                                const buttonEl = (
+                                  <Button
+                                    key={payMethod.type}
+                                    theme='outline'
+                                    type='tertiary'
+                                    onClick={() => preTopUp(payMethod.type)}
+                                    disabled={disabled}
+                                    loading={
+                                      paymentLoading &&
+                                      payWay === payMethod.type
+                                    }
+                                    icon={
+                                      payMethod.type === 'alipay' ? (
+                                        <SiAlipay size={18} color='#1677FF' />
+                                      ) : payMethod.type === 'wxpay' ? (
+                                        <SiWechat size={18} color='#07C160' />
+                                      ) : payMethod.type === 'stripe' ? (
+                                        <SiStripe size={18} color='#635BFF' />
+                                      ) : (
+                                        <CreditCard
+                                          size={18}
+                                          color={
+                                            payMethod.color ||
+                                            'var(--semi-color-text-2)'
+                                          }
+                                        />
+                                      )
+                                    }
+                                    className='!rounded-lg !px-4 !py-2'
+                                  >
+                                    {payMethod.name}
+                                  </Button>
+                                );
 
-                            return disabled &&
-                              minTopupVal > Number(topUpCount || 0) ? (
-                              <Tooltip
-                                content={
-                                  t('此支付方式最低充值金额为') +
-                                  ' ' +
-                                  minTopupVal
-                                }
-                                key={payMethod.type}
-                              >
-                                {buttonEl}
-                              </Tooltip>
-                            ) : (
-                              <React.Fragment key={payMethod.type}>
-                                {buttonEl}
-                              </React.Fragment>
-                            );
-                          })}
-                        </Space>
-                    </Form.Slot>
-                  </Col>
-                  )}
+                                return disabled &&
+                                  minTopupVal > Number(topUpCount || 0) ? (
+                                  <Tooltip
+                                    content={
+                                      t('此支付方式最低充值金额为') +
+                                      ' ' +
+                                      minTopupVal
+                                    }
+                                    key={payMethod.type}
+                                  >
+                                    {buttonEl}
+                                  </Tooltip>
+                                ) : (
+                                  <React.Fragment key={payMethod.type}>
+                                    {buttonEl}
+                                  </React.Fragment>
+                                );
+                              })}
+                          </Space>
+                        </Form.Slot>
+                      </Col>
+                    )}
                 </Row>
               )}
 
@@ -402,7 +524,9 @@ const RechargeCard = ({
                   <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2'>
                     {presetAmounts.map((preset, index) => {
                       const discount =
-                        preset.discount || topupInfo?.discount?.[preset.value] || 1.0;
+                        preset.discount ||
+                        topupInfo?.discount?.[preset.value] ||
+                        1.0;
                       const originalPrice = preset.value * priceRatio;
                       const discountedPrice = originalPrice * discount;
                       const hasDiscount = discount < 1.0;
@@ -418,7 +542,7 @@ const RechargeCard = ({
                           const s = JSON.parse(statusStr);
                           usdRate = s?.usd_exchange_rate || 7;
                         }
-                      } catch (e) { }
+                      } catch (e) {}
 
                       let displayValue = preset.value; // 显示的数量
                       let displayActualPay = actualPay;
@@ -469,7 +593,10 @@ const RechargeCard = ({
                               {hasDiscount && (
                                 <Tag style={{ marginLeft: 4 }} color='green'>
                                   {t('折').includes('off')
-                                    ? ((1 - parseFloat(discount)) * 100).toFixed(1)
+                                    ? (
+                                        (1 - parseFloat(discount)) *
+                                        100
+                                      ).toFixed(1)
                                     : (discount * 10).toFixed(1)}
                                   {t('折')}
                                 </Tag>
@@ -655,6 +782,17 @@ const RechargeCard = ({
         </Button>
       </div>
 
+      {shouldShowBillingPreference && (
+        <BillingPreferenceControl
+          t={t}
+          billingPreference={billingPreference}
+          onChangeBillingPreference={onChangeBillingPreference}
+          activeSubscriptions={activeSubscriptions}
+          allSubscriptions={allSubscriptions}
+          reloadSubscriptionSelf={reloadSubscriptionSelf}
+        />
+      )}
+
       {shouldShowSubscription ? (
         <Tabs
           type={standalone ? 'button' : 'card'}
@@ -662,6 +800,17 @@ const RechargeCard = ({
           onChange={setActiveTab}
           className={standalone ? 'va-wallet-tabs' : ''}
         >
+          <TabPane
+            tab={
+              <div className='flex items-center justify-center gap-2 text-sm font-semibold'>
+                <Wallet size={16} />
+                {t('额度充值')}
+              </div>
+            }
+            itemKey='topup'
+          >
+            <div className='py-2'>{topupContent}</div>
+          </TabPane>
           <TabPane
             tab={
               <div className='flex items-center justify-center gap-2 text-sm font-semibold'>
@@ -680,25 +829,11 @@ const RechargeCard = ({
                 enableOnlineTopUp={enableOnlineTopUp}
                 enableStripeTopUp={enableStripeTopUp}
                 enableCreemTopUp={enableCreemTopUp}
-                billingPreference={billingPreference}
-                onChangeBillingPreference={onChangeBillingPreference}
                 activeSubscriptions={activeSubscriptions}
                 allSubscriptions={allSubscriptions}
-                reloadSubscriptionSelf={reloadSubscriptionSelf}
                 withCard={false}
               />
             </div>
-          </TabPane>
-          <TabPane
-            tab={
-              <div className='flex items-center justify-center gap-2 text-sm font-semibold'>
-                <Wallet size={16} />
-                {t('额度充值')}
-              </div>
-            }
-            itemKey='topup'
-          >
-            <div className='py-2'>{topupContent}</div>
           </TabPane>
         </Tabs>
       ) : (

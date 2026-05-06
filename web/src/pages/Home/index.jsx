@@ -63,7 +63,7 @@ const buildHomeSupportedModels = (models = [], vendors = []) => {
     return map;
   }, {});
 
-  return models
+  const sortedModels = models
     .filter((model) => model?.model_name)
     .map((model) => {
       const vendor = vendorMap[model.vendor_id] || {};
@@ -80,8 +80,35 @@ const buildHomeSupportedModels = (models = [], vendors = []) => {
         priority: priorityIndex === -1 ? homeModelPriority.length : priorityIndex,
       };
     })
-    .sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name))
-    .slice(0, 8);
+    .sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name));
+
+  const featuredModels = homeModelPriority
+    .map((keyword) =>
+      sortedModels.find((model) => model.name.toLowerCase().includes(keyword)),
+    )
+    .filter(Boolean);
+  const featuredNames = new Set(featuredModels.map((model) => model.name));
+
+  return [
+    ...featuredModels,
+    ...sortedModels.filter((model) => !featuredNames.has(model.name)),
+  ].slice(0, 16);
+};
+
+const buildModelMarqueeRow = (models = []) => {
+  if (!models.length) {
+    return { items: [], segmentLength: 0 };
+  }
+
+  let segment = [...models];
+  while (segment.length < 8) {
+    segment = [...segment, ...models];
+  }
+
+  return {
+    items: [...segment, ...segment],
+    segmentLength: segment.length,
+  };
 };
 
 const Home = () => {
@@ -111,6 +138,20 @@ const Home = () => {
     () => uptimeMonitors.slice(0, 5),
     [uptimeMonitors],
   );
+
+  const modelMarqueeRows = useMemo(() => {
+    if (!supportedModels.length) {
+      return [];
+    }
+
+    const firstRow = supportedModels.filter((_, index) => index % 2 === 0);
+    const secondRow = supportedModels.filter((_, index) => index % 2 === 1);
+
+    return [
+      buildModelMarqueeRow(firstRow),
+      buildModelMarqueeRow(secondRow.length ? secondRow : [...firstRow].reverse()),
+    ];
+  }, [supportedModels]);
 
   const uptimeTotal = uptimeMonitors.length;
   const uptimeUp = uptimeMonitors.filter((monitor) => monitor.status === 1).length;
@@ -256,13 +297,27 @@ const Home = () => {
                   <small>{t('模型广场同步')}</small>
                 </div>
                 <div className='va-home-models-rail-v2'>
-                  {supportedModels.map((model) => (
-                    <span className='va-home-model-chip-v2' key={model.name}>
-                      <span className='va-home-model-icon-v2'>
-                        {getLobeHubIcon(model.icon, 18)}
-                      </span>
-                      <span>{model.name}</span>
-                    </span>
+                  {modelMarqueeRows.map((row, rowIndex) => (
+                    <div
+                      className={`va-home-models-lane-v2 is-lane-${rowIndex + 1}`}
+                      key={`model-lane-${rowIndex}`}
+                    >
+                      <div className='va-home-models-track-v2'>
+                        {row.items.map((model, index) => (
+                          <span
+                            aria-hidden={index >= row.segmentLength}
+                            className='va-home-model-chip-v2'
+                            key={`${rowIndex}-${model.name}-${index}`}
+                            title={model.name}
+                          >
+                            <span className='va-home-model-icon-v2'>
+                              {getLobeHubIcon(model.icon, 18)}
+                            </span>
+                            <span>{model.name}</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>

@@ -5312,16 +5312,43 @@ body.va-standalone-mode .semi-select-option.semi-select-option-selected {
 }
 
 .va-home-models-rail-v2 {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: 8px;
+  padding: 2px 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+.va-home-models-lane-v2 {
+  overflow: hidden;
+}
+
+.va-home-models-track-v2 {
+  display: flex;
+  width: max-content;
+  gap: 8px;
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+  animation: va-home-model-marquee 32s linear infinite;
+}
+
+.va-home-models-lane-v2.is-lane-2 .va-home-models-track-v2 {
+  animation-name: va-home-model-marquee-reverse;
+  animation-duration: 38s;
+}
+
+.va-home-models-v2:hover .va-home-models-track-v2 {
+  animation-play-state: paused;
 }
 
 .va-home-model-chip-v2 {
   display: inline-flex;
   align-items: center;
+  flex: 0 0 auto;
   gap: 7px;
   height: 34px;
+  max-width: 245px;
   padding: 0 11px 0 8px;
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 999px;
@@ -5344,6 +5371,13 @@ body.va-standalone-mode .semi-select-option.semi-select-option-selected {
   background: rgba(255, 255, 255, 0.9);
 }
 
+.va-home-model-chip-v2 > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .va-home-model-icon-v2 {
   display: inline-flex;
   align-items: center;
@@ -5359,6 +5393,16 @@ body.va-standalone-mode .semi-select-option.semi-select-option-selected {
 @keyframes va-home-model-chip-float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-3px); }
+}
+
+@keyframes va-home-model-marquee {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
+}
+
+@keyframes va-home-model-marquee-reverse {
+  0% { transform: translate3d(-50%, 0, 0); }
+  100% { transform: translate3d(0, 0, 0); }
 }
 
 @media (max-width: 760px) {
@@ -5549,26 +5593,24 @@ body.va-standalone-mode .semi-select-option.semi-select-option-selected {
   }
 
   .va-home-models-rail-v2 {
-    flex-wrap: nowrap;
-    gap: 8px;
-    margin-right: -12px;
-    padding-right: 12px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-snap-type: x proximity;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    gap: 7px;
+    margin-right: 0;
+    padding: 1px 0;
+    overflow: hidden;
   }
 
-  .va-home-models-rail-v2::-webkit-scrollbar {
-    display: none;
+  .va-home-models-track-v2 {
+    gap: 7px;
+    animation-duration: 27s;
+  }
+
+  .va-home-models-lane-v2.is-lane-2 .va-home-models-track-v2 {
+    animation-duration: 33s;
   }
 
   .va-home-model-chip-v2 {
     flex: 0 0 auto;
     max-width: min(78vw, 280px);
-    animation: none;
-    scroll-snap-align: start;
   }
 
   .va-home-model-chip-v2 > span:last-child {
@@ -5691,6 +5733,7 @@ body.va-standalone-mode .semi-select-option.semi-select-option-selected {
   .va-home-uptime-card::before,
   .va-home-uptime-ring,
   .va-home-uptime-dot.is-up,
+  .va-home-models-track-v2,
   .va-home-model-chip-v2 {
     animation: none !important;
   }

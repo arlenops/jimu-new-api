@@ -22,7 +22,6 @@ import {
   Badge,
   Button,
   Card,
-  Select,
   Skeleton,
   Tag,
   Tooltip,
@@ -106,18 +105,14 @@ const SubscriptionPlansCard = ({
   enableOnlineTopUp = false,
   enableStripeTopUp = false,
   enableCreemTopUp = false,
-  billingPreference,
-  onChangeBillingPreference,
   activeSubscriptions = [],
   allSubscriptions = [],
-  reloadSubscriptionSelf,
   withCard = true,
 }) => {
   const [open, setOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [paying, setPaying] = useState(false);
   const [selectedEpayMethod, setSelectedEpayMethod] = useState('');
-  const [refreshing, setRefreshing] = useState(false);
 
   const epayMethods = useMemo(() => getEpayMethods(payMethods), [payMethods]);
 
@@ -131,15 +126,6 @@ const SubscriptionPlansCard = ({
     setOpen(false);
     setSelectedPlan(null);
     setPaying(false);
-  };
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      await reloadSubscriptionSelf?.();
-    } finally {
-      setRefreshing(false);
-    }
   };
 
   const payStripe = async () => {
@@ -230,16 +216,6 @@ const SubscriptionPlansCard = ({
   // 当前订阅信息 - 支持多个订阅
   const hasActiveSubscription = activeSubscriptions.length > 0;
   const hasAnySubscription = allSubscriptions.length > 0;
-  const disableSubscriptionPreference = !hasActiveSubscription;
-  const isSubscriptionPreference =
-    billingPreference === 'subscription_first' ||
-    billingPreference === 'subscription_only';
-  const displayBillingPreference =
-    disableSubscriptionPreference && isSubscriptionPreference
-      ? 'wallet_first'
-      : billingPreference;
-  const subscriptionPreferenceLabel =
-    billingPreference === 'subscription_only' ? t('仅用订阅') : t('优先订阅');
 
   const planPurchaseCountMap = useMemo(() => {
     const map = new Map();
@@ -375,56 +351,6 @@ const SubscriptionPlansCard = ({
                       '已购订阅会在有效期内自动提供额度与分组权益，你可以随时切换订阅和钱包的结算优先级。',
                     )}
                   </Text>
-                  {disableSubscriptionPreference && isSubscriptionPreference && (
-                    <div className='mt-2 inline-flex rounded-full border border-[rgba(0,178,107,0.14)] bg-[rgba(0,178,107,0.08)] px-3 py-1 text-xs text-[var(--va-accent)]'>
-                      {t('已保存偏好为')}
-                      {subscriptionPreferenceLabel}
-                      {t('，当前无生效订阅，将自动使用钱包')}
-                    </div>
-                  )}
-                </div>
-
-                <div className='flex flex-wrap items-center gap-2 rounded-full border border-[rgba(0,178,107,0.12)] bg-[linear-gradient(135deg,rgba(255,255,255,0.95),rgba(239,250,244,0.82))] px-2 py-1 shadow-[0_12px_30px_-24px_rgba(0,178,107,0.42),inset_0_1px_0_rgba(255,255,255,0.9)]'>
-                  <span className='hidden rounded-full bg-[rgba(0,178,107,0.1)] px-2 py-0.5 text-xs font-semibold text-[var(--va-accent)] md:inline'>
-                    {t('结算')}
-                  </span>
-                  <Select
-                    value={displayBillingPreference}
-                    onChange={onChangeBillingPreference}
-                    size='small'
-                    optionList={[
-                      {
-                        value: 'subscription_first',
-                        label: disableSubscriptionPreference
-                          ? `${t('优先订阅')} (${t('无生效')})`
-                          : t('优先订阅'),
-                        disabled: disableSubscriptionPreference,
-                      },
-                      { value: 'wallet_first', label: t('优先钱包') },
-                      {
-                        value: 'subscription_only',
-                        label: disableSubscriptionPreference
-                          ? `${t('仅用订阅')} (${t('无生效')})`
-                          : t('仅用订阅'),
-                        disabled: disableSubscriptionPreference,
-                      },
-                      { value: 'wallet_only', label: t('仅用钱包') },
-                    ]}
-                  />
-                  <Button
-                    size='small'
-                    theme='borderless'
-                    type='tertiary'
-                    className='!text-slate-500'
-                    icon={
-                      <RefreshCw
-                        size={12}
-                        className={refreshing ? 'animate-spin' : ''}
-                      />
-                    }
-                    onClick={handleRefresh}
-                    loading={refreshing}
-                  />
                 </div>
               </div>
 
@@ -506,14 +432,15 @@ const SubscriptionPlansCard = ({
                                   (subscription?.end_time || 0) * 1000,
                                 ).toLocaleString()}
                               </span>
-                              {isActive && subscription?.next_reset_time > 0 && (
-                                <span>
-                                  {t('下次重置')}:{' '}
-                                  {new Date(
-                                    subscription.next_reset_time * 1000,
-                                  ).toLocaleString()}
-                                </span>
-                              )}
+                              {isActive &&
+                                subscription?.next_reset_time > 0 && (
+                                  <span>
+                                    {t('下次重置')}:{' '}
+                                    {new Date(
+                                      subscription.next_reset_time * 1000,
+                                    ).toLocaleString()}
+                                  </span>
+                                )}
                             </div>
                           </div>
 
@@ -553,7 +480,9 @@ const SubscriptionPlansCard = ({
                               <div className='h-1.5 overflow-hidden rounded-full bg-white shadow-[inset_0_0_0_1px_rgba(15,23,42,0.06)]'>
                                 <div
                                   className={`h-full rounded-full ${
-                                    isActive ? 'bg-[linear-gradient(90deg,var(--va-accent),rgba(0,178,107,0.72))]' : 'bg-slate-400'
+                                    isActive
+                                      ? 'bg-[linear-gradient(90deg,var(--va-accent),rgba(0,178,107,0.72))]'
+                                      : 'bg-slate-400'
                                   }`}
                                   style={{
                                     width: `${Math.min(usagePercent, 100)}%`,
@@ -663,7 +592,8 @@ const SubscriptionPlansCard = ({
                         content: (
                           <div className='flex flex-wrap items-center gap-1.5'>
                             <span>
-                              {t('预计可用总额度')}: {renderQuota(estimatedTotalQuota)}
+                              {t('预计可用总额度')}:{' '}
+                              {renderQuota(estimatedTotalQuota)}
                             </span>
                             <Tooltip
                               content={`${t('按套餐有效期内每个周期额度都用完计算')}，${formatSubscriptionQuotaLabel(plan, t)} ${renderQuota(totalAmount)} × ${Math.ceil(estimatedTotalQuota / totalAmount)} ${t('个周期')}`}
@@ -826,9 +756,7 @@ const SubscriptionPlansCard = ({
   return (
     <>
       {withCard ? (
-        <Card
-          className='!rounded-[24px] w-full border-0 shadow-[0_22px_46px_-38px_rgba(15,23,42,0.18)]'
-        >
+        <Card className='!rounded-[24px] w-full border-0 shadow-[0_22px_46px_-38px_rgba(15,23,42,0.18)]'>
           {cardContent}
         </Card>
       ) : (
