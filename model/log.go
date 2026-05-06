@@ -90,6 +90,57 @@ func RecordLog(userId int, logType int, content string) {
 	}
 }
 
+type RecordTopupLogParams struct {
+	UserId       int
+	Content      string
+	Quota        int
+	AmountUSD    float64
+	CreditAmount float64
+	UnitPrice    float64
+	ReferenceId  string
+	Other        map[string]interface{}
+}
+
+func RecordTopupLog(params RecordTopupLogParams) {
+	if params.UserId <= 0 {
+		return
+	}
+
+	username, _ := GetUsernameById(params.UserId, false)
+	other := make(map[string]interface{}, len(params.Other)+1)
+	for key, value := range params.Other {
+		other[key] = value
+	}
+	if params.AmountUSD > 0 {
+		other["topup_amount_usd"] = params.AmountUSD
+	}
+	if params.CreditAmount > 0 {
+		other["topup_credit_amount"] = params.CreditAmount
+	}
+	if params.UnitPrice > 0 {
+		other["topup_unit_price"] = params.UnitPrice
+	}
+
+	log := &Log{
+		UserId:    params.UserId,
+		Username:  username,
+		CreatedAt: common.GetTimestamp(),
+		Type:      LogTypeTopup,
+		Content:   params.Content,
+		Quota:     params.Quota,
+		RequestId: params.ReferenceId,
+		Other:     common.MapToJsonStr(other),
+	}
+	err := LOG_DB.Create(log).Error
+	if err != nil {
+		common.SysLog("failed to record topup log: " + err.Error())
+		return
+	}
+	if err := RewardAffiliateByTopupLog(log); err != nil {
+		common.SysLog("failed to reward affiliate topup log: " + err.Error())
+	}
+}
+
 func RecordErrorLog(c *gin.Context, userId int, channelId int, modelName string, tokenName string, content string, tokenId int, useTimeSeconds int,
 	isStream bool, group string, other map[string]interface{}) {
 	logger.LogInfo(c, fmt.Sprintf("record error log: userId=%d, channelId=%d, modelName=%s, tokenName=%s, content=%s", userId, channelId, modelName, tokenName, content))
@@ -192,6 +243,7 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 	err := LOG_DB.Create(log).Error
 	if err != nil {
 		logger.LogError(c, "failed to record log: "+err.Error())
+		return
 	}
 	if common.DataExportEnabled {
 		gopool.Go(func() {
@@ -240,6 +292,7 @@ func RecordTaskBillingLog(params RecordTaskBillingLogParams) {
 	err := LOG_DB.Create(log).Error
 	if err != nil {
 		common.SysLog("failed to record task billing log: " + err.Error())
+		return
 	}
 }
 
@@ -378,6 +431,44 @@ type Stat struct {
 	Quota int `json:"quota"`
 	Rpm   int `json:"rpm"`
 	Tpm   int `json:"tpm"`
+}
+
+type DailyConsumeLeaderboardItem struct {
+	UserId         int    `json:"user_id"`
+	Username       string `json:"username"`
+	RequestCount   int64  `json:"request_count"`
+	TotalQuota     int64  `json:"total_quota"`
+	TotalTokens    int64  `json:"total_tokens"`
+	LastConsumedAt int64  `json:"last_consumed_at"`
+}
+
+func GetDailyConsumeLeaderboard(startTimestamp int64, endTimestamp int64, limit int) (items []*DailyConsumeLeaderboardItem, err error) {
+	if limit <= 0 {
+		limit = 10
+	}
+
+	err = LOG_DB.Table("logs").
+		Select(
+			`logs.user_id,
+			MAX(logs.username) as username,
+			COUNT(*) as request_count,
+			COALESCE(SUM(logs.quota), 0) as total_quota,
+			COALESCE(SUM(logs.prompt_tokens), 0) + COALESCE(SUM(logs.completion_tokens), 0) as total_tokens,
+			MAX(logs.created_at) as last_consumed_at`,
+		).
+		Where("logs.type = ? AND logs.created_at >= ? AND logs.created_at <= ? AND logs.user_id > 0", LogTypeConsume, startTimestamp, endTimestamp).
+		Group("logs.user_id").
+		Order("total_quota DESC").
+		Order("request_count DESC").
+		Order("last_consumed_at DESC").
+		Limit(limit).
+		Find(&items).Error
+	if err != nil {
+		common.SysError("failed to query daily consume leaderboard: " + err.Error())
+		return nil, errors.New("查询今日消耗排行榜失败")
+	}
+
+	return items, nil
 }
 
 func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, channel int, group string) (stat Stat, err error) {

@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Empty, Descriptions } from '@douyinfe/semi-ui';
 import CardTable from '../../common/ui/CardTable';
 import {
@@ -25,6 +25,7 @@ import {
   IllustrationNoResultDark,
 } from '@douyinfe/semi-illustrations';
 import { getLogsColumns } from './UsageLogsColumnDefs';
+import { useIsMobile } from '../../../hooks/common/useIsMobile';
 
 const LogsTable = (logsData) => {
   const {
@@ -47,6 +48,12 @@ const LogsTable = (logsData) => {
     t,
     COLUMN_KEYS,
   } = logsData;
+  const isMobile = useIsMobile();
+  const tableShellRef = useRef(null);
+  const topScrollbarRef = useRef(null);
+  const tableScrollerRef = useRef(null);
+  const syncLockRef = useRef(false);
+  const [topScrollbarWidth, setTopScrollbarWidth] = useState(0);
 
   // Get all columns
   const allColumns = useMemo(() => {
@@ -88,44 +95,152 @@ const LogsTable = (logsData) => {
     return <Descriptions data={expandData[record.key]} />;
   };
 
-  return (
-    <CardTable
-      columns={tableColumns}
-      {...(hasExpandableRows() && {
-        expandedRowRender: expandRowRender,
-        expandRowByClick: true,
-        rowExpandable: (record) =>
-          expandData[record.key] && expandData[record.key].length > 0,
-      })}
-      dataSource={logs}
-      rowKey='key'
-      loading={loading}
-      scroll={compactMode ? undefined : { x: 'max-content' }}
-      className='rounded-xl overflow-hidden'
-      size='small'
-      empty={
-        <Empty
-          image={<IllustrationNoResult style={{ width: 150, height: 150 }} />}
-          darkModeImage={
-            <IllustrationNoResultDark style={{ width: 150, height: 150 }} />
-          }
-          description={t('搜索无结果')}
-          style={{ padding: 30 }}
-        />
+  const handleTopScrollbarScroll = useCallback(() => {
+    if (!topScrollbarRef.current || !tableScrollerRef.current) {
+      return;
+    }
+    if (syncLockRef.current) {
+      return;
+    }
+    syncLockRef.current = true;
+    tableScrollerRef.current.scrollLeft = topScrollbarRef.current.scrollLeft;
+    requestAnimationFrame(() => {
+      syncLockRef.current = false;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (isMobile || compactMode) {
+      setTopScrollbarWidth(0);
+      return;
+    }
+
+    const shell = tableShellRef.current;
+    if (!shell) {
+      return;
+    }
+
+    const resolveScroller = () => {
+      const candidates = [
+        '.semi-table-content',
+        '.semi-table-container',
+        '.semi-table-body',
+      ];
+      for (const selector of candidates) {
+        const element = shell.querySelector(selector);
+        if (element && element.scrollWidth > element.clientWidth) {
+          return element;
+        }
       }
-      pagination={{
-        currentPage: activePage,
-        pageSize: pageSize,
-        total: logCount,
-        pageSizeOptions: [10, 20, 50, 100],
-        showSizeChanger: true,
-        onPageSizeChange: (size) => {
-          handlePageSizeChange(size);
-        },
-        onPageChange: handlePageChange,
-      }}
-      hidePagination={true}
-    />
+      return shell.querySelector('.semi-table-content, .semi-table-container, .semi-table-body');
+    };
+
+    const syncWidths = () => {
+      const scroller = resolveScroller();
+      tableScrollerRef.current = scroller;
+      if (!scroller) {
+        setTopScrollbarWidth(0);
+        return;
+      }
+      setTopScrollbarWidth(
+        scroller.scrollWidth > scroller.clientWidth ? scroller.scrollWidth : 0,
+      );
+      if (topScrollbarRef.current) {
+        topScrollbarRef.current.scrollLeft = scroller.scrollLeft;
+      }
+    };
+
+    syncWidths();
+
+    const observer = new ResizeObserver(() => {
+      syncWidths();
+    });
+    observer.observe(shell);
+
+    const currentScroller = resolveScroller();
+    if (currentScroller) {
+      observer.observe(currentScroller);
+    }
+
+    const handleTableScroll = () => {
+      if (!topScrollbarRef.current || !tableScrollerRef.current) {
+        return;
+      }
+      if (syncLockRef.current) {
+        return;
+      }
+      syncLockRef.current = true;
+      topScrollbarRef.current.scrollLeft = tableScrollerRef.current.scrollLeft;
+      requestAnimationFrame(() => {
+        syncLockRef.current = false;
+      });
+    };
+
+    currentScroller?.addEventListener('scroll', handleTableScroll, {
+      passive: true,
+    });
+
+    return () => {
+      observer.disconnect();
+      currentScroller?.removeEventListener('scroll', handleTableScroll);
+    };
+  }, [compactMode, isMobile, logs.length, visibleColumnsList.length]);
+
+  return (
+    <div ref={tableShellRef} className='va-logs-table-shell'>
+      {!isMobile && !compactMode && topScrollbarWidth > 0 ? (
+        <div
+          ref={topScrollbarRef}
+          className='va-top-scrollbar mb-2'
+          onScroll={handleTopScrollbarScroll}
+        >
+          <div
+            style={{
+              width: topScrollbarWidth,
+              height: 1,
+            }}
+          />
+        </div>
+      ) : null}
+
+      <CardTable
+        columns={tableColumns}
+        {...(hasExpandableRows() && {
+          expandedRowRender: expandRowRender,
+          expandRowByClick: true,
+          rowExpandable: (record) =>
+            expandData[record.key] && expandData[record.key].length > 0,
+        })}
+        dataSource={logs}
+        rowKey='key'
+        loading={loading}
+        scroll={compactMode ? undefined : { x: 'max-content' }}
+        className='rounded-xl overflow-hidden'
+        size='small'
+        empty={
+          <Empty
+            image={<IllustrationNoResult style={{ width: 150, height: 150 }} />}
+            darkModeImage={
+              <IllustrationNoResultDark style={{ width: 150, height: 150 }} />
+            }
+            description={t('搜索无结果')}
+            style={{ padding: 30 }}
+          />
+        }
+        pagination={{
+          currentPage: activePage,
+          pageSize: pageSize,
+          total: logCount,
+          pageSizeOptions: [10, 20, 50, 100],
+          showSizeChanger: true,
+          onPageSizeChange: (size) => {
+            handlePageSizeChange(size);
+          },
+          onPageChange: handlePageChange,
+        }}
+        hidePagination={true}
+      />
+    </div>
   );
 };
 

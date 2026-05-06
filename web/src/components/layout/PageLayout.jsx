@@ -31,6 +31,7 @@ import { useTranslation } from 'react-i18next';
 import {
   API,
   getLogo,
+  getStoredUser,
   getSystemName,
   showError,
   setStatusData,
@@ -55,6 +56,7 @@ const PageLayout = () => {
     '/console/log',
     '/console/redemption',
     '/console/user',
+    '/console/promotion-reward',
     '/console/token',
     '/console/midjourney',
     '/console/task',
@@ -70,6 +72,22 @@ const PageLayout = () => {
     location.pathname !== '/console/playground';
 
   const isConsoleRoute = location.pathname.startsWith('/console');
+  const isConsoleChatRoute = location.pathname.startsWith('/console/chat');
+  const isHomeRoute = location.pathname === '/';
+  const isVoltStandaloneRoute = [
+    '/',
+    '/login',
+    '/register',
+    '/reset',
+    '/user/reset',
+    '/dashboard',
+    '/dengwang-ranking',
+    '/token-management',
+    '/usage-logs',
+    '/wallet-management',
+    '/promotion-center',
+    '/pricing',
+  ].includes(location.pathname);
   const showSider = isConsoleRoute && (!isMobile || drawerOpen);
 
   useEffect(() => {
@@ -79,10 +97,9 @@ const PageLayout = () => {
   }, [isMobile, drawerOpen, collapsed, setCollapsed]);
 
   const loadUser = () => {
-    let user = localStorage.getItem('user');
+    const user = getStoredUser();
     if (user) {
-      let data = JSON.parse(user);
-      userDispatch({ type: 'login', payload: data });
+      userDispatch({ type: 'login', payload: user });
     }
   };
 
@@ -110,10 +127,15 @@ const PageLayout = () => {
     }
     let logo = getLogo();
     if (logo) {
-      let linkElement = document.querySelector("link[rel~='icon']");
-      if (linkElement) {
+      ['icon', 'shortcut icon', 'apple-touch-icon'].forEach((rel) => {
+        let linkElement = document.querySelector(`link[rel="${rel}"]`);
+        if (!linkElement) {
+          linkElement = document.createElement('link');
+          linkElement.rel = rel;
+          document.head.appendChild(linkElement);
+        }
         linkElement.href = logo;
-      }
+      });
     }
   }, []);
 
@@ -151,6 +173,7 @@ const PageLayout = () => {
         display: 'flex',
         flexDirection: 'column',
         overflow: isMobile ? 'visible' : 'hidden',
+        backgroundColor: isVoltStandaloneRoute ? '#f5f7f2' : undefined,
       }}
     >
       <Header
@@ -171,9 +194,14 @@ const PageLayout = () => {
       </Header>
       <Layout
         style={{
+          marginTop:
+            isConsoleRoute && !isConsoleChatRoute
+              ? 'var(--app-header-marquee-height)'
+              : '0',
           overflow: isMobile ? 'visible' : 'auto',
           display: 'flex',
           flexDirection: 'column',
+          backgroundColor: isVoltStandaloneRoute ? '#f5f7f2' : undefined,
         }}
       >
         {showSider && (
@@ -182,7 +210,7 @@ const PageLayout = () => {
             style={{
               position: 'fixed',
               left: 0,
-              top: '64px',
+              top: 'var(--app-header-offset)',
               zIndex: 99,
               border: 'none',
               paddingRight: '0',
@@ -215,6 +243,7 @@ const PageLayout = () => {
               WebkitOverflowScrolling: 'touch',
               padding: shouldInnerPadding ? (isMobile ? '5px' : '24px') : '0',
               position: 'relative',
+              backgroundColor: isVoltStandaloneRoute ? '#f5f7f2' : undefined,
             }}
           >
             <ErrorBoundary>
@@ -226,6 +255,7 @@ const PageLayout = () => {
               style={{
                 flex: '0 0 auto',
                 width: '100%',
+                backgroundColor: isVoltStandaloneRoute ? '#f5f7f2' : undefined,
               }}
             >
               <FooterBar />

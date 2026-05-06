@@ -32,3 +32,15 @@ export function formatSubscriptionResetPeriod(plan, t) {
   }
   return t('不重置');
 }
+
+export function formatSubscriptionQuotaLabel(plan, t) {
+  const period = plan?.quota_reset_period || 'never';
+  if (period === 'daily') return t('每日额度');
+  if (period === 'weekly') return t('每周额度');
+  if (period === 'monthly') return t('每月额度');
+  if (period === 'custom') {
+    const resetPeriod = formatSubscriptionResetPeriod(plan, t);
+    return `${t('每周期额度')} (${resetPeriod})`;
+  }
+  return t('总额度');
+}

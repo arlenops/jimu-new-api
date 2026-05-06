@@ -504,6 +504,19 @@ func CreateUserSubscriptionFromPlanTx(tx *gorm.DB, userId int, plan *Subscriptio
 	return sub, nil
 }
 
+func subscriptionRewardMetrics(plan *SubscriptionPlan, money float64) (int, float64, float64) {
+	if plan == nil || plan.TotalAmount <= 0 {
+		return 0, 0, 0
+	}
+	quota := int(plan.TotalAmount)
+	creditAmount := quotaToAmount(quota)
+	unitPrice := 0.0
+	if creditAmount > 0 {
+		unitPrice = money / creditAmount
+	}
+	return quota, creditAmount, unitPrice
+}
+
 // Complete a subscription order (idempotent). Creates a UserSubscription snapshot from the plan.
 func CompleteSubscriptionOrder(tradeNo string, providerPayload string) error {
 	if tradeNo == "" {
@@ -516,6 +529,9 @@ func CompleteSubscriptionOrder(tradeNo string, providerPayload string) error {
 	var logUserId int
 	var logPlanTitle string
 	var logMoney float64
+	var logQuota int
+	var logCreditAmount float64
+	var logUnitPrice float64
 	var logPaymentMethod string
 	var upgradeGroup string
 	err := DB.Transaction(func(tx *gorm.DB) error {
@@ -529,7 +545,7 @@ func CompleteSubscriptionOrder(tradeNo string, providerPayload string) error {
 		if order.Status != common.TopUpStatusPending {
 			return ErrSubscriptionOrderStatusInvalid
 		}
-		plan, err := GetSubscriptionPlanById(order.PlanId)
+		plan, err := getSubscriptionPlanByIdTx(tx, order.PlanId)
 		if err != nil {
 			return err
 		}
@@ -555,6 +571,7 @@ func CompleteSubscriptionOrder(tradeNo string, providerPayload string) error {
 		logUserId = order.UserId
 		logPlanTitle = plan.Title
 		logMoney = order.Money
+		logQuota, logCreditAmount, logUnitPrice = subscriptionRewardMetrics(plan, order.Money)
 		logPaymentMethod = order.PaymentMethod
 		return nil
 	})
@@ -566,7 +583,20 @@ func CompleteSubscriptionOrder(tradeNo string, providerPayload string) error {
 	}
 	if logUserId > 0 {
 		msg := fmt.Sprintf("订阅购买成功，套餐: %s，支付金额: %.2f，支付方式: %s", logPlanTitle, logMoney, logPaymentMethod)
-		RecordLog(logUserId, LogTypeTopup, msg)
+		RecordTopupLog(RecordTopupLogParams{
+			UserId:       logUserId,
+			Content:      msg,
+			Quota:        logQuota,
+			AmountUSD:    logMoney,
+			CreditAmount: logCreditAmount,
+			UnitPrice:    logUnitPrice,
+			ReferenceId:  tradeNo,
+			Other: map[string]interface{}{
+				"payment_method": logPaymentMethod,
+				"topup_scene":    "subscription",
+				"plan_title":     logPlanTitle,
+			},
+		})
 	}
 	return nil
 }

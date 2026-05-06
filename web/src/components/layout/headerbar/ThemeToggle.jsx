@@ -22,7 +22,7 @@ import { Button, Dropdown } from '@douyinfe/semi-ui';
 import { Sun, Moon, Monitor } from 'lucide-react';
 import { useActualTheme } from '../../../context/Theme';
 
-const ThemeToggle = ({ theme, onThemeToggle, t }) => {
+const ThemeToggle = ({ theme, onThemeToggle, t, invertColors = false }) => {
   const actualTheme = useActualTheme();
 
   const themeOptions = useMemo(
@@ -101,7 +101,7 @@ const ThemeToggle = ({ theme, onThemeToggle, t }) => {
           aria-label={t('切换主题')}
           theme='borderless'
           type='tertiary'
-          className='!p-1.5 !text-current focus:!bg-semi-color-fill-1 !rounded-full !bg-semi-color-fill-0 hover:!bg-semi-color-fill-1'
+          className={`!p-1.5 !rounded-full ${invertColors ? '!text-[#f2f2f2] !bg-[rgba(255,255,255,0.04)] hover:!bg-[rgba(255,255,255,0.08)]' : '!text-current focus:!bg-semi-color-fill-1 !bg-semi-color-fill-0 hover:!bg-semi-color-fill-1'}`}
         />
       </span>
     </Dropdown>

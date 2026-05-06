@@ -285,11 +285,14 @@ func migrateDB() error {
 		return err
 	}
 	if common.UsingSQLite {
+		if err := ensureAffRewardRecordTableSQLite(); err != nil {
+			return err
+		}
 		if err := ensureSubscriptionPlanTableSQLite(); err != nil {
 			return err
 		}
 	} else {
-		if err := DB.AutoMigrate(&SubscriptionPlan{}); err != nil {
+		if err := DB.AutoMigrate(&AffRewardRecord{}, &SubscriptionPlan{}); err != nil {
 			return err
 		}
 	}
@@ -353,11 +356,14 @@ func migrateDBFast() error {
 		}
 	}
 	if common.UsingSQLite {
+		if err := ensureAffRewardRecordTableSQLite(); err != nil {
+			return err
+		}
 		if err := ensureSubscriptionPlanTableSQLite(); err != nil {
 			return err
 		}
 	} else {
-		if err := DB.AutoMigrate(&SubscriptionPlan{}); err != nil {
+		if err := DB.AutoMigrate(&AffRewardRecord{}, &SubscriptionPlan{}); err != nil {
 			return err
 		}
 	}
@@ -376,6 +382,90 @@ func migrateLOGDB() error {
 type sqliteColumnDef struct {
 	Name string
 	DDL  string
+}
+
+func ensureAffRewardRecordTableSQLite() error {
+	if !common.UsingSQLite {
+		return nil
+	}
+	tableName := "aff_reward_records"
+	if !DB.Migrator().HasTable(tableName) {
+		createSQL := `CREATE TABLE ` + "`" + tableName + "`" + ` (
+` + "`id`" + ` integer,
+` + "`inviter_id`" + ` integer NOT NULL,
+` + "`invitee_id`" + ` integer NOT NULL,
+` + "`source_log_id`" + ` integer NOT NULL,
+` + "`source_log_type`" + ` integer NOT NULL DEFAULT 2,
+` + "`source_request_id`" + ` varchar(64) DEFAULT '',
+` + "`consumed_quota`" + ` integer NOT NULL DEFAULT 0,
+` + "`consumed_amount_usd`" + ` numeric NOT NULL DEFAULT 0,
+` + "`reward_rate`" + ` integer NOT NULL DEFAULT 0,
+` + "`reward_quota`" + ` integer NOT NULL DEFAULT 0,
+` + "`created_at`" + ` bigint NOT NULL,
+PRIMARY KEY (` + "`id`" + `)
+)`
+		if err := DB.Exec(createSQL).Error; err != nil {
+			return err
+		}
+		indexes := []string{
+			"CREATE INDEX IF NOT EXISTS `idx_aff_reward_records_inviter_id` ON `aff_reward_records`(`inviter_id`)",
+			"CREATE INDEX IF NOT EXISTS `idx_aff_reward_records_invitee_id` ON `aff_reward_records`(`invitee_id`)",
+			"CREATE UNIQUE INDEX IF NOT EXISTS `idx_aff_reward_records_source_log_id` ON `aff_reward_records`(`source_log_id`)",
+			"CREATE INDEX IF NOT EXISTS `idx_aff_reward_records_source_request_id` ON `aff_reward_records`(`source_request_id`)",
+			"CREATE INDEX IF NOT EXISTS `idx_aff_reward_records_created_at` ON `aff_reward_records`(`created_at`)",
+		}
+		for _, indexSQL := range indexes {
+			if err := DB.Exec(indexSQL).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	var cols []struct {
+		Name string `gorm:"column:name"`
+	}
+	if err := DB.Raw("PRAGMA table_info(`" + tableName + "`)").Scan(&cols).Error; err != nil {
+		return err
+	}
+	existing := make(map[string]struct{}, len(cols))
+	for _, c := range cols {
+		existing[c.Name] = struct{}{}
+	}
+	required := []sqliteColumnDef{
+		{Name: "inviter_id", DDL: "`inviter_id` integer NOT NULL"},
+		{Name: "invitee_id", DDL: "`invitee_id` integer NOT NULL"},
+		{Name: "source_log_id", DDL: "`source_log_id` integer NOT NULL"},
+		{Name: "source_log_type", DDL: "`source_log_type` integer NOT NULL DEFAULT 2"},
+		{Name: "source_request_id", DDL: "`source_request_id` varchar(64) DEFAULT ''"},
+		{Name: "consumed_quota", DDL: "`consumed_quota` integer NOT NULL DEFAULT 0"},
+		{Name: "consumed_amount_usd", DDL: "`consumed_amount_usd` numeric NOT NULL DEFAULT 0"},
+		{Name: "reward_rate", DDL: "`reward_rate` integer NOT NULL DEFAULT 0"},
+		{Name: "reward_quota", DDL: "`reward_quota` integer NOT NULL DEFAULT 0"},
+		{Name: "created_at", DDL: "`created_at` bigint NOT NULL DEFAULT 0"},
+	}
+	for _, col := range required {
+		if _, ok := existing[col.Name]; ok {
+			continue
+		}
+		if err := DB.Exec("ALTER TABLE `" + tableName + "` ADD COLUMN " + col.DDL).Error; err != nil {
+			return err
+		}
+	}
+
+	indexes := []string{
+		"CREATE INDEX IF NOT EXISTS `idx_aff_reward_records_inviter_id` ON `aff_reward_records`(`inviter_id`)",
+		"CREATE INDEX IF NOT EXISTS `idx_aff_reward_records_invitee_id` ON `aff_reward_records`(`invitee_id`)",
+		"CREATE UNIQUE INDEX IF NOT EXISTS `idx_aff_reward_records_source_log_id` ON `aff_reward_records`(`source_log_id`)",
+		"CREATE INDEX IF NOT EXISTS `idx_aff_reward_records_source_request_id` ON `aff_reward_records`(`source_request_id`)",
+		"CREATE INDEX IF NOT EXISTS `idx_aff_reward_records_created_at` ON `aff_reward_records`(`created_at`)",
+	}
+	for _, indexSQL := range indexes {
+		if err := DB.Exec(indexSQL).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func ensureSubscriptionPlanTableSQLite() error {

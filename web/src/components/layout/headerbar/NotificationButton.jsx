@@ -19,17 +19,18 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import { Button, Badge } from '@douyinfe/semi-ui';
-import { Bell } from 'lucide-react';
+import { Megaphone } from 'lucide-react';
 
-const NotificationButton = ({ unreadCount, onNoticeOpen, t }) => {
+const NotificationButton = ({ unreadCount, onNoticeOpen, t, invertColors = false }) => {
   const buttonProps = {
-    icon: <Bell size={18} />,
+    icon: <Megaphone size={16} />,
     'aria-label': t('系统公告'),
     onClick: onNoticeOpen,
-    theme: 'borderless',
+    theme: 'light',
     type: 'tertiary',
-    className:
-      '!p-1.5 !text-current focus:!bg-semi-color-fill-1 dark:focus:!bg-gray-700 !rounded-full !bg-semi-color-fill-0 dark:!bg-semi-color-fill-1 hover:!bg-semi-color-fill-1 dark:hover:!bg-semi-color-fill-2',
+    className: invertColors
+      ? '!h-10 !w-10 !min-w-[40px] !rounded-full !border !border-[rgba(15,23,42,0.08)] !bg-[rgba(255,255,255,0.82)] !px-0 !text-[#111827] hover:!bg-[rgba(0,178,107,0.08)]'
+      : '!h-10 !w-10 !min-w-[40px] !rounded-full !border !border-semi-color-border !bg-semi-color-fill-0 !px-0 !text-current hover:!bg-semi-color-fill-1 dark:!border-gray-700 dark:!bg-semi-color-fill-1 dark:hover:!bg-semi-color-fill-2',
   };
 
   if (unreadCount > 0) {

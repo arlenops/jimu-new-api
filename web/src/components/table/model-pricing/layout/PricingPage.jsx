@@ -25,7 +25,7 @@ import ModelDetailSideSheet from '../modal/ModelDetailSideSheet';
 import { useModelPricingData } from '../../../../hooks/model-pricing/useModelPricingData';
 import { useIsMobile } from '../../../../hooks/common/useIsMobile';
 
-const PricingPage = () => {
+const PricingPage = ({ standalone = false }) => {
   const pricingData = useModelPricingData();
   const { Sider, Content } = Layout;
   const isMobile = useIsMobile();
@@ -33,6 +33,7 @@ const PricingPage = () => {
   const [viewMode, setViewMode] = React.useState('card');
   const allProps = {
     ...pricingData,
+    standalone,
     showRatio,
     setShowRatio,
     viewMode,
@@ -40,15 +41,19 @@ const PricingPage = () => {
   };
 
   return (
-    <div className='bg-white'>
-      <Layout className='pricing-layout'>
+    <div className={standalone ? 'va-pricing-shell' : 'bg-white'}>
+      <Layout className={`pricing-layout ${standalone ? 'va-pricing-layout' : ''}`}>
         {!isMobile && (
-          <Sider className='pricing-scroll-hide pricing-sidebar'>
+          <Sider
+            className={`pricing-scroll-hide pricing-sidebar ${standalone ? 'va-pricing-sidebar' : ''}`}
+          >
             <PricingSidebar {...allProps} />
           </Sider>
         )}
 
-        <Content className='pricing-scroll-hide pricing-content'>
+        <Content
+          className={`pricing-scroll-hide pricing-content ${standalone ? 'va-pricing-content' : ''}`}
+        >
           <PricingContent
             {...allProps}
             isMobile={isMobile}

@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/model"
@@ -146,6 +147,22 @@ func GetLogsSelfStat(c *gin.Context) {
 		},
 	})
 	return
+}
+
+func GetDailyConsumeLeaderboard(c *gin.Context) {
+	now := time.Now()
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).Unix()
+	items, err := model.GetDailyConsumeLeaderboard(startOfDay, now.Unix(), 10)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+
+	common.ApiSuccess(c, gin.H{
+		"items":           items,
+		"start_timestamp": startOfDay,
+		"end_timestamp":   now.Unix(),
+	})
 }
 
 func DeleteHistoryLogs(c *gin.Context) {

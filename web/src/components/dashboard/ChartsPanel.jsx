@@ -18,9 +18,13 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import { Card, Tabs, TabPane } from '@douyinfe/semi-ui';
+import { Card, Empty, Tabs, TabPane } from '@douyinfe/semi-ui';
 import { PieChart } from 'lucide-react';
 import { VChart } from '@visactor/react-vchart';
+import {
+  IllustrationConstruction,
+  IllustrationConstructionDark,
+} from '@douyinfe/semi-illustrations';
 
 const ChartsPanel = ({
   activeChartTab,
@@ -37,7 +41,30 @@ const ChartsPanel = ({
   FLEX_CENTER_GAP2,
   hasApiInfoPanel,
   t,
+  standalone = false,
 }) => {
+  const activeSpecMap = {
+    '1': spec_line,
+    '2': spec_model_line,
+    '3': spec_pie,
+    '4': spec_rank_bar,
+    '5': spec_user_rank,
+    '6': spec_user_trend,
+  };
+
+  const activeSpec = activeSpecMap[activeChartTab];
+  const hasMeaningfulData =
+    Array.isArray(activeSpec?.data) &&
+    activeSpec.data.some(
+      (dataset) =>
+        Array.isArray(dataset?.values) &&
+        dataset.values.some((entry) =>
+          Object.values(entry || {}).some(
+            (value) => typeof value === 'number' && value > 0,
+          ),
+        ),
+    );
+
   return (
     <Card
       {...CARD_PROPS}
@@ -68,23 +95,40 @@ const ChartsPanel = ({
       }
       bodyStyle={{ padding: 0 }}
     >
-      <div className='h-96 p-2'>
-        {activeChartTab === '1' && (
+      <div className={`h-96 p-2 ${standalone ? 'va-standalone-chart-stage' : ''}`}>
+        {standalone && !hasMeaningfulData ? (
+          <div className='va-standalone-chart-empty'>
+            <Empty
+              image={
+                <IllustrationConstruction style={{ width: 108, height: 108 }} />
+              }
+              darkModeImage={
+                <IllustrationConstructionDark style={{ width: 108, height: 108 }} />
+              }
+              title={t('暂无图表数据')}
+              description={t(
+                '当前没有足够的调用数据生成图表，先从令牌管理接入一次请求。',
+              )}
+            />
+          </div>
+        ) : null}
+
+        {(!standalone || hasMeaningfulData) && activeChartTab === '1' && (
           <VChart spec={spec_line} option={CHART_CONFIG} />
         )}
-        {activeChartTab === '2' && (
+        {(!standalone || hasMeaningfulData) && activeChartTab === '2' && (
           <VChart spec={spec_model_line} option={CHART_CONFIG} />
         )}
-        {activeChartTab === '3' && (
+        {(!standalone || hasMeaningfulData) && activeChartTab === '3' && (
           <VChart spec={spec_pie} option={CHART_CONFIG} />
         )}
-        {activeChartTab === '4' && (
+        {(!standalone || hasMeaningfulData) && activeChartTab === '4' && (
           <VChart spec={spec_rank_bar} option={CHART_CONFIG} />
         )}
-        {activeChartTab === '5' && isAdminUser && (
+        {(!standalone || hasMeaningfulData) && activeChartTab === '5' && isAdminUser && (
           <VChart spec={spec_user_rank} option={CHART_CONFIG} />
         )}
-        {activeChartTab === '6' && isAdminUser && (
+        {(!standalone || hasMeaningfulData) && activeChartTab === '6' && isAdminUser && (
           <VChart spec={spec_user_trend} option={CHART_CONFIG} />
         )}
       </div>

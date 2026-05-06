@@ -21,51 +21,65 @@ import React from 'react';
 import { Button, Dropdown } from '@douyinfe/semi-ui';
 import { Languages } from 'lucide-react';
 
-const LanguageSelector = ({ currentLang, onLanguageChange, t }) => {
+const LanguageSelector = ({
+  currentLang,
+  onLanguageChange,
+  t,
+  invertColors = false,
+}) => {
+  const menuClass = invertColors
+    ? '!rounded-lg !border !border-[rgba(15,23,42,0.1)] !bg-[rgba(255,255,255,0.96)] !shadow-[0_20px_40px_rgba(15,23,42,0.12)] backdrop-blur-xl'
+    : '!bg-semi-color-bg-overlay !border-semi-color-border !shadow-lg !rounded-lg dark:!bg-gray-700 dark:!border-gray-600';
+  const itemClass = (lang) =>
+    invertColors
+      ? `!px-3 !py-1.5 !text-sm !text-[#111827] ${currentLang === lang ? '!bg-[rgba(0,178,107,0.12)] !text-[#00b26b] !font-semibold' : 'hover:!bg-[rgba(0,178,107,0.06)]'}`
+      : `!px-3 !py-1.5 !text-sm !text-semi-color-text-0 dark:!text-gray-200 ${currentLang === lang ? '!bg-semi-color-primary-light-default dark:!bg-blue-600 !font-semibold' : 'hover:!bg-semi-color-fill-1 dark:hover:!bg-gray-600'}`;
+
   return (
     <Dropdown
       position='bottomRight'
       render={
-        <Dropdown.Menu className='!bg-semi-color-bg-overlay !border-semi-color-border !shadow-lg !rounded-lg dark:!bg-gray-700 dark:!border-gray-600'>
+        <Dropdown.Menu className={menuClass}>
           {/* Language sorting: Order by English name (Chinese, English, French, Japanese, Russian) */}
           <Dropdown.Item
             onClick={() => onLanguageChange('zh-CN')}
-            className={`!px-3 !py-1.5 !text-sm !text-semi-color-text-0 dark:!text-gray-200 ${currentLang === 'zh-CN' ? '!bg-semi-color-primary-light-default dark:!bg-blue-600 !font-semibold' : 'hover:!bg-semi-color-fill-1 dark:hover:!bg-gray-600'}`}
+            className={itemClass('zh-CN')}
           >
             简体中文
           </Dropdown.Item>
           <Dropdown.Item
             onClick={() => onLanguageChange('zh-TW')}
-            className={`!px-3 !py-1.5 !text-sm !text-semi-color-text-0 dark:!text-gray-200 ${currentLang === 'zh-TW' ? '!bg-semi-color-primary-light-default dark:!bg-blue-600 !font-semibold' : 'hover:!bg-semi-color-fill-1 dark:hover:!bg-gray-600'}`}
+            className={itemClass('zh-TW')}
           >
         	繁體中文
-          </Dropdown.Item>          <Dropdown.Item
+          </Dropdown.Item>
+          <Dropdown.Item
             onClick={() => onLanguageChange('en')}
-            className={`!px-3 !py-1.5 !text-sm !text-semi-color-text-0 dark:!text-gray-200 ${currentLang === 'en' ? '!bg-semi-color-primary-light-default dark:!bg-blue-600 !font-semibold' : 'hover:!bg-semi-color-fill-1 dark:hover:!bg-gray-600'}`}
+            className={itemClass('en')}
           >
             English
           </Dropdown.Item>
           <Dropdown.Item
             onClick={() => onLanguageChange('fr')}
-            className={`!px-3 !py-1.5 !text-sm !text-semi-color-text-0 dark:!text-gray-200 ${currentLang === 'fr' ? '!bg-semi-color-primary-light-default dark:!bg-blue-600 !font-semibold' : 'hover:!bg-semi-color-fill-1 dark:hover:!bg-gray-600'}`}
+            className={itemClass('fr')}
           >
             Français
           </Dropdown.Item>
           <Dropdown.Item
             onClick={() => onLanguageChange('ja')}
-            className={`!px-3 !py-1.5 !text-sm !text-semi-color-text-0 dark:!text-gray-200 ${currentLang === 'ja' ? '!bg-semi-color-primary-light-default dark:!bg-blue-600 !font-semibold' : 'hover:!bg-semi-color-fill-1 dark:hover:!bg-gray-600'}`}
+            className={itemClass('ja')}
           >
             日本語
           </Dropdown.Item>
           <Dropdown.Item
             onClick={() => onLanguageChange('ru')}
-            className={`!px-3 !py-1.5 !text-sm !text-semi-color-text-0 dark:!text-gray-200 ${currentLang === 'ru' ? '!bg-semi-color-primary-light-default dark:!bg-blue-600 !font-semibold' : 'hover:!bg-semi-color-fill-1 dark:hover:!bg-gray-600'}`}
+            className={itemClass('ru')}
           >
             Русский
           </Dropdown.Item>
           <Dropdown.Item
             onClick={() => onLanguageChange('vi')}
-            className={`!px-3 !py-1.5 !text-sm !text-semi-color-text-0 dark:!text-gray-200 ${currentLang === 'vi' ? '!bg-semi-color-primary-light-default dark:!bg-blue-600 !font-semibold' : 'hover:!bg-semi-color-fill-1 dark:hover:!bg-gray-600'}`}
+            className={itemClass('vi')}
           >
             Tiếng Việt
           </Dropdown.Item>
@@ -77,7 +91,7 @@ const LanguageSelector = ({ currentLang, onLanguageChange, t }) => {
         aria-label={t('common.changeLanguage')}
         theme='borderless'
         type='tertiary'
-        className='!p-1.5 !text-current focus:!bg-semi-color-fill-1 dark:focus:!bg-gray-700 !rounded-full !bg-semi-color-fill-0 dark:!bg-semi-color-fill-1 hover:!bg-semi-color-fill-1 dark:hover:!bg-semi-color-fill-2'
+        className={`!p-1.5 !rounded-full ${invertColors ? '!text-[#111827] !bg-[rgba(255,255,255,0.78)] hover:!bg-[rgba(0,178,107,0.08)]' : '!text-current focus:!bg-semi-color-fill-1 dark:focus:!bg-gray-700 !bg-semi-color-fill-0 dark:!bg-semi-color-fill-1 hover:!bg-semi-color-fill-1 dark:hover:!bg-semi-color-fill-2'}`}
       />
     </Dropdown>
   );

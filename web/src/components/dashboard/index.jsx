@@ -52,7 +52,7 @@ import {
   renderMonitorList,
 } from '../../helpers/dashboard';
 
-const Dashboard = () => {
+const Dashboard = ({ standalone = false }) => {
   // ========== Context ==========
   const [userState, userDispatch] = useContext(UserContext);
   const [statusState, statusDispatch] = useContext(StatusContext);
@@ -144,6 +144,7 @@ const Dashboard = () => {
       label: dashboardData.t(info.label),
     }),
   );
+  const showApiInfoPanel = dashboardData.hasApiInfoPanel && !standalone;
 
   // ========== Effects ==========
   useEffect(() => {
@@ -159,6 +160,7 @@ const Dashboard = () => {
         refresh={handleRefresh}
         loading={dashboardData.loading}
         t={dashboardData.t}
+        standalone={standalone}
       />
 
       <SearchModal
@@ -180,12 +182,14 @@ const Dashboard = () => {
         getTrendSpec={getTrendSpec}
         CARD_PROPS={CARD_PROPS}
         CHART_CONFIG={CHART_CONFIG}
+        standalone={standalone}
+        topUpRoute={standalone ? '/wallet-management' : '/console/topup'}
       />
 
       {/* API信息和图表面板 */}
       <div className='mb-4'>
         <div
-          className={`grid grid-cols-1 gap-4 ${dashboardData.hasApiInfoPanel ? 'lg:grid-cols-4' : ''}`}
+          className={`grid grid-cols-1 gap-4 ${showApiInfoPanel ? 'lg:grid-cols-4' : ''}`}
         >
           <ChartsPanel
             activeChartTab={dashboardData.activeChartTab}
@@ -200,11 +204,12 @@ const Dashboard = () => {
             CARD_PROPS={CARD_PROPS}
             CHART_CONFIG={CHART_CONFIG}
             FLEX_CENTER_GAP2={FLEX_CENTER_GAP2}
-            hasApiInfoPanel={dashboardData.hasApiInfoPanel}
+            hasApiInfoPanel={showApiInfoPanel}
             t={dashboardData.t}
+            standalone={standalone}
           />
 
-          {dashboardData.hasApiInfoPanel && (
+          {showApiInfoPanel && (
             <ApiInfoPanel
               apiInfoData={apiInfoData}
               handleCopyUrl={(url) => handleCopyUrl(url, dashboardData.t)}

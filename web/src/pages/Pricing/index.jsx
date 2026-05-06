@@ -18,12 +18,27 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
+import StandalonePageShell from '../../components/common/layout/StandalonePageShell';
 import ModelPricingPage from '../../components/table/model-pricing/layout/PricingPage';
 
-const Pricing = () => (
-  <>
-    <ModelPricingPage />
-  </>
-);
+const Pricing = () => {
+  const { t } = useTranslation();
+
+  return (
+    <StandalonePageShell
+      showHero={false}
+      contentWidthClass='max-w-[1600px]'
+      eyebrow={t('Model Marketplace')}
+      title={t('模型广场')}
+      description={t(
+        '把供应商筛选、模型卡片和价格视图收进统一的暗色工作台里，和首页及其他独立页保持同一套 VoltAgent 视觉。',
+      )}
+      badge={`${t('Model Catalog')} · ${t('单页视图')}`}
+    >
+      <ModelPricingPage standalone />
+    </StandalonePageShell>
+  );
+};
 
 export default Pricing;

@@ -20,6 +20,10 @@ For commercial licensing, please contact support@quantumnous.com
 import React from 'react';
 import { Modal, Typography, Input, InputNumber } from '@douyinfe/semi-ui';
 import { CreditCard } from 'lucide-react';
+import {
+  formatUsdAmount,
+  quotaToUsdAmount,
+} from '../../../helpers/quota';
 
 const TransferModal = ({
   t,
@@ -27,11 +31,13 @@ const TransferModal = ({
   transfer,
   handleTransferCancel,
   userState,
-  renderQuota,
   getQuotaPerUnit,
   transferAmount,
   setTransferAmount,
 }) => {
+  const availableRewardUsd = quotaToUsdAmount(userState?.user?.aff_quota || 0);
+  const minTransferUsd = quotaToUsdAmount(getQuotaPerUnit());
+
   return (
     <Modal
       title={
@@ -45,27 +51,34 @@ const TransferModal = ({
       onCancel={handleTransferCancel}
       maskClosable={false}
       centered
+      width={460}
+      className='va-transfer-modal'
+      okText={t('确认划转')}
+      cancelText={t('取消')}
     >
-      <div className='space-y-4'>
-        <div>
+      <div className='va-transfer-modal__content space-y-4'>
+        <div className='va-transfer-modal__field'>
           <Typography.Text strong className='block mb-2'>
             {t('可用邀请额度')}
           </Typography.Text>
           <Input
-            value={renderQuota(userState?.user?.aff_quota)}
+            value={formatUsdAmount(availableRewardUsd)}
             disabled
             className='!rounded-lg'
           />
         </div>
-        <div>
+        <div className='va-transfer-modal__field'>
           <Typography.Text strong className='block mb-2'>
-            {t('划转额度')} · {t('最低') + renderQuota(getQuotaPerUnit())}
+            {t('划转额度')} · {t('最低') + formatUsdAmount(minTransferUsd)}
           </Typography.Text>
           <InputNumber
-            min={getQuotaPerUnit()}
-            max={userState?.user?.aff_quota || 0}
+            min={minTransferUsd}
+            max={availableRewardUsd}
+            precision={2}
+            step={0.01}
             value={transferAmount}
             onChange={(value) => setTransferAmount(value)}
+            prefix='$'
             className='w-full !rounded-lg'
           />
         </div>

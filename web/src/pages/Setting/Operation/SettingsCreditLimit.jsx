@@ -132,13 +132,14 @@ export default function SettingsCreditLimit(props) {
               </Col>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.InputNumber
-                  label={t('邀请新用户奖励额度')}
+                  label={t('邀请用户充值提成占比')}
                   field={'QuotaForInviter'}
                   step={1}
                   min={0}
-                  suffix={'Token'}
-                  extraText={''}
-                  placeholder={t('例如：2000')}
+                  max={100}
+                  suffix={'%'}
+                  extraText={t('填写 10 表示被邀请用户充值金额按 10% 返到推广奖励')}
+                  placeholder={t('例如：10')}
                   onChange={(value) =>
                     setInputs({
                       ...inputs,
@@ -156,7 +157,7 @@ export default function SettingsCreditLimit(props) {
                   step={1}
                   min={0}
                   suffix={'Token'}
-                  extraText={''}
+                  extraText={t('该功能保留用于邀请活动，和充值提成并行生效')}
                   placeholder={t('例如：1000')}
                   onChange={(value) =>
                     setInputs({

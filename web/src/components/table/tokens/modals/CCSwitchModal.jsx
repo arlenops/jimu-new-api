@@ -140,6 +140,7 @@ export default function CCSwitchModal({
       cancelText={t('取消')}
       maskClosable={false}
       width={480}
+      className='va-cc-switch-modal'
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>

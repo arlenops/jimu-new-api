@@ -12,15 +12,15 @@ import (
 )
 
 type TopUp struct {
-	Id               int     `json:"id"`
-	UserId           int     `json:"user_id" gorm:"index"`
-	Amount           int64   `json:"amount"`
-	Money            float64 `json:"money"`
-	TradeNo          string  `json:"trade_no" gorm:"unique;type:varchar(255);index"`
-	PaymentMethod    string  `json:"payment_method" gorm:"type:varchar(50)"`
-	CreateTime       int64   `json:"create_time"`
-	CompleteTime     int64   `json:"complete_time"`
-	Status           string  `json:"status"`
+	Id            int     `json:"id"`
+	UserId        int     `json:"user_id" gorm:"index"`
+	Amount        int64   `json:"amount"`
+	Money         float64 `json:"money"`
+	TradeNo       string  `json:"trade_no" gorm:"unique;type:varchar(255);index"`
+	PaymentMethod string  `json:"payment_method" gorm:"type:varchar(50)"`
+	CreateTime    int64   `json:"create_time"`
+	CompleteTime  int64   `json:"complete_time"`
+	Status        string  `json:"status"`
 }
 
 func (topUp *TopUp) Insert() error {
@@ -99,7 +99,24 @@ func Recharge(referenceId string, customerId string) (err error) {
 		return errors.New("充值失败，请稍后重试")
 	}
 
-	RecordLog(topUp.UserId, LogTypeTopup, fmt.Sprintf("使用在线充值成功，充值金额: %v，支付金额：%d", logger.FormatQuota(int(quota)), topUp.Amount))
+	RecordTopupLog(RecordTopupLogParams{
+		UserId:       topUp.UserId,
+		Content:      fmt.Sprintf("使用在线充值成功，充值金额: %v，支付金额：%d", logger.FormatQuota(int(quota)), topUp.Amount),
+		Quota:        int(quota),
+		AmountUSD:    topUp.Money,
+		CreditAmount: float64(topUp.Amount),
+		UnitPrice: func() float64 {
+			if topUp.Amount <= 0 {
+				return 0
+			}
+			return topUp.Money / float64(topUp.Amount)
+		}(),
+		ReferenceId: topUp.TradeNo,
+		Other: map[string]interface{}{
+			"payment_method": topUp.PaymentMethod,
+			"topup_scene":    "online",
+		},
+	})
 
 	return nil
 }
@@ -249,6 +266,8 @@ func ManualCompleteTopUp(tradeNo string) error {
 	var userId int
 	var quotaToAdd int
 	var payMoney float64
+	var creditAmount float64
+	var paymentMethod string
 
 	err := DB.Transaction(func(tx *gorm.DB) error {
 		topUp := &TopUp{}
@@ -295,6 +314,8 @@ func ManualCompleteTopUp(tradeNo string) error {
 
 		userId = topUp.UserId
 		payMoney = topUp.Money
+		creditAmount = float64(topUp.Amount)
+		paymentMethod = topUp.PaymentMethod
 		return nil
 	})
 
@@ -303,7 +324,24 @@ func ManualCompleteTopUp(tradeNo string) error {
 	}
 
 	// 事务外记录日志，避免阻塞
-	RecordLog(userId, LogTypeTopup, fmt.Sprintf("管理员补单成功，充值金额: %v，支付金额：%f", logger.FormatQuota(quotaToAdd), payMoney))
+	RecordTopupLog(RecordTopupLogParams{
+		UserId:       userId,
+		Content:      fmt.Sprintf("管理员补单成功，充值金额: %v，支付金额：%f", logger.FormatQuota(quotaToAdd), payMoney),
+		Quota:        quotaToAdd,
+		AmountUSD:    payMoney,
+		CreditAmount: creditAmount,
+		UnitPrice: func() float64 {
+			if creditAmount <= 0 {
+				return 0
+			}
+			return payMoney / creditAmount
+		}(),
+		ReferenceId: tradeNo,
+		Other: map[string]interface{}{
+			"payment_method": paymentMethod,
+			"topup_scene":    "admin_manual",
+		},
+	})
 	return nil
 }
 func RechargeCreem(referenceId string, customerEmail string, customerName string) (err error) {
@@ -372,7 +410,24 @@ func RechargeCreem(referenceId string, customerEmail string, customerName string
 		return errors.New("充值失败，请稍后重试")
 	}
 
-	RecordLog(topUp.UserId, LogTypeTopup, fmt.Sprintf("使用Creem充值成功，充值额度: %v，支付金额：%.2f", quota, topUp.Money))
+	RecordTopupLog(RecordTopupLogParams{
+		UserId:       topUp.UserId,
+		Content:      fmt.Sprintf("使用Creem充值成功，充值额度: %v，支付金额：%.2f", quota, topUp.Money),
+		Quota:        int(quota),
+		AmountUSD:    topUp.Money,
+		CreditAmount: float64(topUp.Amount),
+		UnitPrice: func() float64 {
+			if topUp.Amount <= 0 {
+				return 0
+			}
+			return topUp.Money / float64(topUp.Amount)
+		}(),
+		ReferenceId: topUp.TradeNo,
+		Other: map[string]interface{}{
+			"payment_method": topUp.PaymentMethod,
+			"topup_scene":    "creem",
+		},
+	})
 
 	return nil
 }
@@ -430,7 +485,24 @@ func RechargeWaffo(tradeNo string) (err error) {
 	}
 
 	if quotaToAdd > 0 {
-		RecordLog(topUp.UserId, LogTypeTopup, fmt.Sprintf("Waffo充值成功，充值额度: %v，支付金额: %.2f", logger.FormatQuota(quotaToAdd), topUp.Money))
+		RecordTopupLog(RecordTopupLogParams{
+			UserId:       topUp.UserId,
+			Content:      fmt.Sprintf("Waffo充值成功，充值额度: %v，支付金额: %.2f", logger.FormatQuota(quotaToAdd), topUp.Money),
+			Quota:        quotaToAdd,
+			AmountUSD:    topUp.Money,
+			CreditAmount: float64(topUp.Amount),
+			UnitPrice: func() float64 {
+				if topUp.Amount <= 0 {
+					return 0
+				}
+				return topUp.Money / float64(topUp.Amount)
+			}(),
+			ReferenceId: topUp.TradeNo,
+			Other: map[string]interface{}{
+				"payment_method": topUp.PaymentMethod,
+				"topup_scene":    "waffo",
+			},
+		})
 	}
 
 	return nil

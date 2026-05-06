@@ -45,3 +45,27 @@ export const displayAmountToQuota = (amount) => {
   const usd = type === 'USD' ? abs : abs / (rate || 1);
   return sign * Math.round(usd * getQuotaPerUnit());
 };
+
+export const quotaToUsdAmount = (quota) => {
+  const q = Number(quota || 0);
+  if (!Number.isFinite(q) || q === 0) return 0;
+  return q / getQuotaPerUnit();
+};
+
+export const usdAmountToQuota = (usdAmount) => {
+  const amount = Number(usdAmount || 0);
+  if (!Number.isFinite(amount) || amount === 0) return 0;
+  return Math.round(amount * getQuotaPerUnit());
+};
+
+export const formatUsdAmount = (amount, digits = 2) => {
+  const numericAmount = Number(amount || 0);
+  if (!Number.isFinite(numericAmount)) {
+    return '$0';
+  }
+  const fixed = numericAmount
+    .toFixed(digits)
+    .replace(/\.0+$/, '')
+    .replace(/(\.\d*[1-9])0+$/, '$1');
+  return `$${fixed}`;
+};

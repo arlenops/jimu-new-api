@@ -31,3 +31,20 @@ data/
 .gopath
 
 token_estimator_test.go
+
+# Local release/build artifacts
+.artifacts/
+*.tar.gz
+*.zip
+
+# Local deployment overrides
+docker-compose.server.yml
+
+# Vite temporary config snapshots
+web/vite.config.js.timestamp-*.mjs
+
+# Local design/export assets
+img/
+
+# Local Apifox upload package
+docs/apifox/

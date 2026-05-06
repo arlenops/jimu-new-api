@@ -47,6 +47,7 @@ const PricingTopSection = memo(
     setViewMode,
     tokenUnit,
     setTokenUnit,
+    standalone = false,
     t,
   }) => {
     const [showFilterModal, setShowFilterModal] = useState(false);
@@ -70,14 +71,15 @@ const PricingTopSection = memo(
                 currency={currency}
                 setCurrency={setCurrency}
                 siteDisplayType={siteDisplayType}
-                showRatio={showRatio}
-                setShowRatio={setShowRatio}
-                viewMode={viewMode}
-                setViewMode={setViewMode}
-                tokenUnit={tokenUnit}
-                setTokenUnit={setTokenUnit}
-                t={t}
-              />
+              showRatio={showRatio}
+              setShowRatio={setShowRatio}
+              viewMode={viewMode}
+              setViewMode={setViewMode}
+              tokenUnit={tokenUnit}
+              setTokenUnit={setTokenUnit}
+              standalone={standalone}
+              t={t}
+            />
             </div>
             <PricingFilterModal
               visible={showFilterModal}
@@ -112,6 +114,7 @@ const PricingTopSection = memo(
             setViewMode={setViewMode}
             tokenUnit={tokenUnit}
             setTokenUnit={setTokenUnit}
+            standalone={standalone}
           />
         )}
       </>

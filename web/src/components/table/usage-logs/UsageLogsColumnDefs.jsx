@@ -204,7 +204,10 @@ function renderIsStream(bool, t, streamStatus) {
 }
 
 function renderUseTime(type, t) {
-  const time = parseInt(type);
+  const time = Number(type);
+  if (!Number.isFinite(time) || time < 0) {
+    return null;
+  }
   if (time < 101) {
     return (
       <Tag color='green' shape='circle'>
@@ -229,31 +232,39 @@ function renderUseTime(type, t) {
   }
 }
 
-function renderFirstUseTime(type, t) {
-  let time = parseFloat(type) / 1000.0;
-  time = time.toFixed(1);
+function renderFirstUseTime(type, t, streamStatus) {
+  const firstResponseTimeMs = Number(type);
+  const hasStreamError = streamStatus && streamStatus.status !== 'ok';
+
+  if (!Number.isFinite(firstResponseTimeMs) || firstResponseTimeMs <= 0) {
+    if (!hasStreamError) {
+      return null;
+    }
+    return (
+      <Tag color='amber' shape='circle'>
+        {t('异常')}
+      </Tag>
+    );
+  }
+
+  const time = firstResponseTimeMs / 1000.0;
+  const timeLabel = time.toFixed(1);
+
   if (time < 3) {
     return (
       <Tag color='green' shape='circle'>
         {' '}
-        {time} s{' '}
-      </Tag>
-    );
-  } else if (time < 10) {
-    return (
-      <Tag color='orange' shape='circle'>
-        {' '}
-        {time} s{' '}
-      </Tag>
-    );
-  } else {
-    return (
-      <Tag color='red' shape='circle'>
-        {' '}
-        {time} s{' '}
+        {timeLabel} s{' '}
       </Tag>
     );
   }
+
+  return (
+    <Tag color='amber' shape='circle'>
+      {' '}
+      {timeLabel} s{' '}
+    </Tag>
+  );
 }
 
 function renderBillingTag(record, t) {
@@ -739,7 +750,7 @@ export const getLogsColumns = ({
             <>
               <Space>
                 {renderUseTime(text, t)}
-                {renderFirstUseTime(other?.frt, t)}
+                {renderFirstUseTime(other?.frt, t, other?.stream_status)}
                 {renderIsStream(record.is_stream, t, other?.stream_status)}
               </Space>
             </>

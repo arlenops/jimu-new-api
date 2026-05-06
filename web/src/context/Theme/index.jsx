@@ -33,75 +33,39 @@ export const useActualTheme = () => useContext(ActualThemeContext);
 
 const SetThemeContext = createContext(null);
 export const useSetTheme = () => useContext(SetThemeContext);
-
-// 检测系统主题偏好
-const getSystemTheme = () => {
-  if (typeof window !== 'undefined' && window.matchMedia) {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches
-      ? 'dark'
-      : 'light';
-  }
-  return 'light';
-};
+const FORCED_THEME = 'light';
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, _setTheme] = useState(() => {
-    try {
-      return localStorage.getItem('theme-mode') || 'auto';
-    } catch {
-      return 'auto';
-    }
-  });
-
-  const [systemTheme, setSystemTheme] = useState(getSystemTheme());
-
-  // 计算实际应用的主题
-  const actualTheme = theme === 'auto' ? systemTheme : theme;
-
-  // 监听系统主题变化
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.matchMedia) {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-      const handleSystemThemeChange = (e) => {
-        setSystemTheme(e.matches ? 'dark' : 'light');
-      };
-
-      mediaQuery.addEventListener('change', handleSystemThemeChange);
-
-      return () => {
-        mediaQuery.removeEventListener('change', handleSystemThemeChange);
-      };
-    }
-  }, []);
+  const [theme, _setTheme] = useState(FORCED_THEME);
+  const actualTheme = FORCED_THEME;
 
   // 应用主题到DOM
   useEffect(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
     const body = document.body;
-    if (actualTheme === 'dark') {
-      body.setAttribute('theme-mode', 'dark');
-      document.documentElement.classList.add('dark');
-    } else {
-      body.removeAttribute('theme-mode');
-      document.documentElement.classList.remove('dark');
+    const root = document.documentElement;
+
+    body.removeAttribute('theme-mode');
+    root.classList.remove('dark');
+    root.style.colorScheme = FORCED_THEME;
+
+    try {
+      localStorage.setItem('theme-mode', FORCED_THEME);
+    } catch {
+      // ignore storage failures
     }
   }, [actualTheme]);
 
-  const setTheme = useCallback((newTheme) => {
-    let themeValue;
-
-    if (typeof newTheme === 'boolean') {
-      // 向后兼容原有的 boolean 参数
-      themeValue = newTheme ? 'dark' : 'light';
-    } else if (typeof newTheme === 'string') {
-      // 新的字符串参数支持 'light', 'dark', 'auto'
-      themeValue = newTheme;
-    } else {
-      themeValue = 'auto';
+  const setTheme = useCallback(() => {
+    _setTheme(FORCED_THEME);
+    try {
+      localStorage.setItem('theme-mode', FORCED_THEME);
+    } catch {
+      // ignore storage failures
     }
-
-    _setTheme(themeValue);
-    localStorage.setItem('theme-mode', themeValue);
   }, []);
 
   return (

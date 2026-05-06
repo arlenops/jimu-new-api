@@ -214,6 +214,7 @@ export const useTokensData = (openFluentNotification, openCCSwitchModal) => {
   // Open link function for chat integrations
   const onOpenLink = async (type, url, record) => {
     const fullKey = await fetchTokenKey(record);
+    const apiKey = `sk-${fullKey}`;
     if (url && url.startsWith('ccswitch')) {
       openCCSwitchModal(fullKey);
       return;
@@ -254,7 +255,8 @@ export const useTokensData = (openFluentNotification, openCCSwitchModal) => {
     } else {
       let encodedServerAddress = encodeURIComponent(serverAddress);
       url = url.replaceAll('{address}', encodedServerAddress);
-      url = url.replaceAll('{key}', `sk-${fullKey}`);
+      url = url.replaceAll('{encodedKey}', encodeURIComponent(apiKey));
+      url = url.replaceAll('{key}', apiKey);
     }
 
     window.open(url, '_blank');

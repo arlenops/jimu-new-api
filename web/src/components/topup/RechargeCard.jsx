@@ -53,6 +53,7 @@ import SubscriptionPlansCard from './SubscriptionPlansCard';
 const { Text } = Typography;
 
 const RechargeCard = ({
+  standalone = false,
   t,
   enableOnlineTopUp,
   enableStripeTopUp,
@@ -118,25 +119,38 @@ const RechargeCard = ({
       setActiveTab('topup');
     }
   }, [shouldShowSubscription, activeTab]);
+
+  const summaryCoverStyle = standalone
+    ? {
+        background:
+          'radial-gradient(circle at 18% 18%, rgba(0,178,107,0.16), transparent 26%), radial-gradient(circle at 82% 24%, rgba(48,108,206,0.12), transparent 28%), linear-gradient(135deg, rgba(244,250,245,0.98) 0%, rgba(236,244,239,0.96) 100%)',
+      }
+    : {
+        '--palette-primary-darkerChannel': '37 99 235',
+        backgroundImage:
+          "linear-gradient(0deg, rgba(var(--palette-primary-darkerChannel) / 80%), rgba(var(--palette-primary-darkerChannel) / 80%)), url('/cover-4.webp')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      };
+  const standaloneTitleColor = standalone ? 'var(--va-text)' : 'white';
+  const standaloneMetaColor = standalone
+    ? 'var(--va-text-muted)'
+    : 'rgba(255,255,255,0.8)';
+
   const topupContent = (
     <Space vertical style={{ width: '100%' }}>
       {/* 统计数据 */}
       <Card
-        className='!rounded-xl w-full'
+        className={`!rounded-xl w-full ${standalone ? 'va-wallet-feature-card' : ''}`}
         cover={
           <div
             className='relative h-30'
-            style={{
-              '--palette-primary-darkerChannel': '37 99 235',
-              backgroundImage: `linear-gradient(0deg, rgba(var(--palette-primary-darkerChannel) / 80%), rgba(var(--palette-primary-darkerChannel) / 80%)), url('/cover-4.webp')`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-            }}
+            style={summaryCoverStyle}
           >
-            <div className='relative z-10 h-full flex flex-col justify-between p-4'>
-              <div className='flex justify-between items-center'>
-                <Text strong style={{ color: 'white', fontSize: '16px' }}>
+              <div className='relative z-10 h-full flex flex-col justify-between p-4'>
+                <div className='flex justify-between items-center'>
+                <Text strong style={{ color: standaloneTitleColor, fontSize: '16px' }}>
                   {t('账户统计')}
                 </Text>
               </div>
@@ -147,7 +161,7 @@ const RechargeCard = ({
                 <div className='text-center'>
                   <div
                     className='text-base sm:text-2xl font-bold mb-2'
-                    style={{ color: 'white' }}
+                    style={{ color: standaloneTitleColor }}
                   >
                     {renderQuota(userState?.user?.quota)}
                   </div>
@@ -155,11 +169,11 @@ const RechargeCard = ({
                     <Wallet
                       size={14}
                       className='mr-1'
-                      style={{ color: 'rgba(255,255,255,0.8)' }}
+                      style={{ color: standaloneMetaColor }}
                     />
                     <Text
                       style={{
-                        color: 'rgba(255,255,255,0.8)',
+                        color: standaloneMetaColor,
                         fontSize: '12px',
                       }}
                     >
@@ -172,7 +186,7 @@ const RechargeCard = ({
                 <div className='text-center'>
                   <div
                     className='text-base sm:text-2xl font-bold mb-2'
-                    style={{ color: 'white' }}
+                    style={{ color: standaloneTitleColor }}
                   >
                     {renderQuota(userState?.user?.used_quota)}
                   </div>
@@ -180,11 +194,11 @@ const RechargeCard = ({
                     <TrendingUp
                       size={14}
                       className='mr-1'
-                      style={{ color: 'rgba(255,255,255,0.8)' }}
+                      style={{ color: standaloneMetaColor }}
                     />
                     <Text
                       style={{
-                        color: 'rgba(255,255,255,0.8)',
+                        color: standaloneMetaColor,
                         fontSize: '12px',
                       }}
                     >
@@ -197,7 +211,7 @@ const RechargeCard = ({
                 <div className='text-center'>
                   <div
                     className='text-base sm:text-2xl font-bold mb-2'
-                    style={{ color: 'white' }}
+                    style={{ color: standaloneTitleColor }}
                   >
                     {userState?.user?.request_count || 0}
                   </div>
@@ -205,11 +219,11 @@ const RechargeCard = ({
                     <BarChart2
                       size={14}
                       className='mr-1'
-                      style={{ color: 'rgba(255,255,255,0.8)' }}
+                      style={{ color: standaloneMetaColor }}
                     />
                     <Text
                       style={{
-                        color: 'rgba(255,255,255,0.8)',
+                        color: standaloneMetaColor,
                         fontSize: '12px',
                       }}
                     >
@@ -642,10 +656,15 @@ const RechargeCard = ({
       </div>
 
       {shouldShowSubscription ? (
-        <Tabs type='card' activeKey={activeTab} onChange={setActiveTab}>
+        <Tabs
+          type={standalone ? 'button' : 'card'}
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          className={standalone ? 'va-wallet-tabs' : ''}
+        >
           <TabPane
             tab={
-              <div className='flex items-center gap-2'>
+              <div className='flex items-center justify-center gap-2 text-sm font-semibold'>
                 <Sparkles size={16} />
                 {t('订阅套餐')}
               </div>
@@ -672,7 +691,7 @@ const RechargeCard = ({
           </TabPane>
           <TabPane
             tab={
-              <div className='flex items-center gap-2'>
+              <div className='flex items-center justify-center gap-2 text-sm font-semibold'>
                 <Wallet size={16} />
                 {t('额度充值')}
               </div>

@@ -45,6 +45,17 @@ import ParamOverrideEntry from '../../components/table/usage-logs/components/Par
 export const useLogsData = () => {
   const { t } = useTranslation();
 
+  const formatCompactTimestamp = (timestamp) => {
+    const date = new Date(timestamp * 1000);
+    const year = String(date.getFullYear()).slice(-2);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hour = String(date.getHours()).padStart(2, '0');
+    const minute = String(date.getMinutes()).padStart(2, '0');
+    const second = String(date.getSeconds()).padStart(2, '0');
+    return `${year}/${month}/${day} ${hour}:${minute}:${second}`;
+  };
+
   // Define column keys for selection
   const COLUMN_KEYS = {
     TIME: 'time',
@@ -377,7 +388,7 @@ export const useLogsData = () => {
 
     let expandDatesLocal = {};
     for (let i = 0; i < logs.length; i++) {
-      logs[i].timestamp2string = timestamp2string(logs[i].created_at);
+      logs[i].timestamp2string = formatCompactTimestamp(logs[i].created_at);
       logs[i].key = logs[i].id;
       let other = getLogOther(logs[i].other);
       let expandDataLocal = [];

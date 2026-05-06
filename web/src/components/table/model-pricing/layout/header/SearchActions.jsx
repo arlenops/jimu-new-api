@@ -42,6 +42,7 @@ const SearchActions = memo(
     setViewMode,
     tokenUnit,
     setTokenUnit,
+    standalone = false,
     t,
   }) => {
     const supportsCurrencyDisplay = siteDisplayType !== 'TOKENS';
@@ -84,7 +85,11 @@ const SearchActions = memo(
           icon={<IconCopy />}
           onClick={handleCopyClick}
           disabled={selectedRowKeys.length === 0}
-          className='!bg-blue-500 hover:!bg-blue-600 !text-white disabled:!bg-gray-300 disabled:!text-gray-500'
+          className={
+            standalone
+              ? 'va-pricing-copy-button'
+              : '!bg-blue-500 hover:!bg-blue-600 !text-white disabled:!bg-gray-300 disabled:!text-gray-500'
+          }
         >
           {t('复制')}
         </Button>

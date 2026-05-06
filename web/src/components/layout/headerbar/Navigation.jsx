@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import SkeletonWrapper from '../components/SkeletonWrapper';
 
 const Navigation = ({
@@ -27,17 +27,42 @@ const Navigation = ({
   isLoading,
   userState,
   pricingRequireAuth,
+  invertColors = false,
+  centeredDesktop = false,
 }) => {
+  const location = useLocation();
+
+  const isLinkActive = (link) => {
+    if (!link?.to) {
+      return false;
+    }
+
+    const pathname = location.pathname;
+
+    if (link.itemKey === 'home') {
+      return pathname === '/';
+    }
+
+    if (link.itemKey === 'console') {
+      return pathname === '/console' || pathname.startsWith('/console/');
+    }
+
+    return pathname === link.to || pathname.startsWith(`${link.to}/`);
+  };
+
   const renderNavLinks = () => {
     const baseClasses =
-      'flex-shrink-0 flex items-center gap-1 font-semibold rounded-md transition-all duration-200 ease-in-out';
-    const hoverClasses = 'hover:text-semi-color-primary';
-    const spacingClasses = isMobile ? 'p-1' : 'p-2';
+      'va-header-nav-link flex-shrink-0 flex items-center gap-1 rounded-xl transition-all duration-200 ease-in-out';
+    const colorClasses = invertColors
+      ? 'text-[#111827] hover:text-[#00b26b] font-medium'
+      : 'font-semibold hover:text-semi-color-primary';
+    const spacingClasses = isMobile ? 'px-3 py-2' : 'px-3 py-2';
 
-    const commonLinkClasses = `${baseClasses} ${spacingClasses} ${hoverClasses}`;
+    const commonLinkClasses = `${baseClasses} ${spacingClasses} ${colorClasses}`;
 
     return mainNavLinks.map((link) => {
       const linkContent = <span>{link.text}</span>;
+      const activeClassName = isLinkActive(link) ? ' is-active' : '';
 
       if (link.isExternal) {
         return (
@@ -54,7 +79,12 @@ const Navigation = ({
       }
 
       let targetPath = link.to;
-      if (link.itemKey === 'console' && !userState.user) {
+      if (
+        ['console', 'dashboard', 'dengKingRanking', 'tokenManagement', 'usageLogs', 'walletManagement', 'promotionCenter'].includes(
+          link.itemKey,
+        ) &&
+        !userState.user
+      ) {
         targetPath = '/login';
       }
       if (link.itemKey === 'pricing' && pricingRequireAuth && !userState.user) {
@@ -62,15 +92,24 @@ const Navigation = ({
       }
 
       return (
-        <Link key={link.itemKey} to={targetPath} className={commonLinkClasses}>
+        <Link
+          key={link.itemKey}
+          to={targetPath}
+          className={`${commonLinkClasses}${activeClassName}`}
+          aria-current={isLinkActive(link) ? 'page' : undefined}
+        >
           {linkContent}
         </Link>
       );
     });
   };
 
+  const navClassName = centeredDesktop
+    ? 'flex flex-1 items-center gap-1 lg:gap-2 mx-2 md:absolute md:left-1/2 md:-translate-x-1/2 md:flex-none md:justify-center md:mx-0 md:max-w-[calc(100%-22rem)] overflow-x-auto whitespace-nowrap scrollbar-hide'
+    : 'flex flex-1 items-center gap-1 lg:gap-2 mx-2 md:mx-4 overflow-x-auto whitespace-nowrap scrollbar-hide';
+
   return (
-    <nav className='flex flex-1 items-center gap-1 lg:gap-2 mx-2 md:mx-4 overflow-x-auto whitespace-nowrap scrollbar-hide'>
+    <nav className={navClassName}>
       <SkeletonWrapper
         loading={isLoading}
         type='navigation'

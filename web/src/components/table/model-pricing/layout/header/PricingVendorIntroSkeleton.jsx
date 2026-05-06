@@ -97,18 +97,25 @@ const createSkeletonRect = (style = {}, key = null) => (
 );
 
 const PricingVendorIntroSkeleton = memo(
-  ({ isAllVendors = false, isMobile = false }) => {
+  ({ isAllVendors = false, isMobile = false, standalone = false }) => {
+    const coverStyle = standalone
+      ? {
+          background:
+            'radial-gradient(circle at 18% 18%, rgba(0,217,146,0.22), transparent 26%), radial-gradient(circle at 82% 24%, rgba(48,108,206,0.2), transparent 28%), linear-gradient(135deg, rgba(13,17,23,0.98) 0%, rgba(11,13,18,0.96) 100%)',
+        }
+      : SKELETON_STYLES.cover(
+          isAllVendors
+            ? THEME_COLORS.allVendors.primary
+            : THEME_COLORS.specific.primary,
+        );
+
     const placeholder = (
       <Card
-        className='!rounded-2xl shadow-sm border-0'
+        className={`!rounded-2xl shadow-sm border-0 ${standalone ? 'va-pricing-hero-card' : ''}`}
         cover={
           <div
             className='relative h-full'
-            style={SKELETON_STYLES.cover(
-              isAllVendors
-                ? THEME_COLORS.allVendors.primary
-                : THEME_COLORS.specific.primary,
-            )}
+            style={coverStyle}
           >
             <div className='relative z-10 h-full flex items-center justify-between p-4'>
               <div className='flex-1 min-w-0 mr-4'>
@@ -153,7 +160,9 @@ const PricingVendorIntroSkeleton = memo(
                 </div>
               </div>
 
-              <div className='flex-shrink-0 w-16 h-16 rounded-2xl bg-white/90 shadow-md backdrop-blur-sm flex items-center justify-center'>
+              <div
+                className={`flex-shrink-0 w-16 h-16 rounded-2xl shadow-md backdrop-blur-sm flex items-center justify-center ${standalone ? 'va-pricing-hero-avatar' : 'bg-white/90'}`}
+              >
                 {createSkeletonRect(
                   {
                     ...SKELETON_STYLES.avatar(isAllVendors),

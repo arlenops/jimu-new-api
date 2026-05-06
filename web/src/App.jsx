@@ -36,6 +36,12 @@ import Token from './pages/Token';
 import Redemption from './pages/Redemption';
 import TopUp from './pages/TopUp';
 import Log from './pages/Log';
+import StandaloneTokenManagement from './pages/StandaloneTokenManagement';
+import StandaloneUsageLogs from './pages/StandaloneUsageLogs';
+import StandaloneWalletManagement from './pages/StandaloneWalletManagement';
+import StandalonePromotionCenter from './pages/StandalonePromotionCenter';
+import StandalonePersonalSettings from './pages/StandalonePersonalSettings';
+import StandaloneDengKingRanking from './pages/StandaloneDengKingRanking';
 import Chat from './pages/Chat';
 import Chat2Link from './pages/Chat2Link';
 import Midjourney from './pages/Midjourney';
@@ -45,6 +51,7 @@ import ModelPage from './pages/Model';
 import ModelDeploymentPage from './pages/ModelDeployment';
 import Playground from './pages/Playground';
 import Subscription from './pages/Subscription';
+import PromotionReward from './pages/PromotionReward';
 import OAuth2Callback from './components/auth/OAuth2Callback';
 import PersonalSetting from './components/settings/PersonalSetting';
 import Setup from './pages/Setup';
@@ -52,6 +59,7 @@ import SetupCheck from './components/layout/SetupCheck';
 
 const Home = lazy(() => import('./pages/Home'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const StandaloneDashboard = lazy(() => import('./pages/StandaloneDashboard'));
 const About = lazy(() => import('./pages/About'));
 const UserAgreement = lazy(() => import('./pages/UserAgreement'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
@@ -148,6 +156,22 @@ function App() {
           }
         />
         <Route
+          path='/token-management'
+          element={
+            <PrivateRoute>
+              <StandaloneTokenManagement />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path='/dengwang-ranking'
+          element={
+            <PrivateRoute>
+              <StandaloneDengKingRanking />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path='/console/playground'
           element={
             <PrivateRoute>
@@ -168,6 +192,14 @@ function App() {
           element={
             <AdminRoute>
               <User />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path='/console/promotion-reward'
+          element={
+            <AdminRoute>
+              <PromotionReward />
             </AdminRoute>
           }
         />
@@ -268,11 +300,41 @@ function App() {
           }
         />
         <Route
+          path='/personal-settings'
+          element={
+            <PrivateRoute>
+              <Suspense fallback={<Loading></Loading>} key={location.pathname}>
+                <StandalonePersonalSettings />
+              </Suspense>
+            </PrivateRoute>
+          }
+        />
+        <Route
           path='/console/topup'
           element={
             <PrivateRoute>
               <Suspense fallback={<Loading></Loading>} key={location.pathname}>
                 <TopUp />
+              </Suspense>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path='/wallet-management'
+          element={
+            <PrivateRoute>
+              <Suspense fallback={<Loading></Loading>} key={location.pathname}>
+                <StandaloneWalletManagement />
+              </Suspense>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path='/promotion-center'
+          element={
+            <PrivateRoute>
+              <Suspense fallback={<Loading></Loading>} key={location.pathname}>
+                <StandalonePromotionCenter />
               </Suspense>
             </PrivateRoute>
           }
@@ -286,11 +348,29 @@ function App() {
           }
         />
         <Route
+          path='/usage-logs'
+          element={
+            <PrivateRoute>
+              <StandaloneUsageLogs />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path='/console'
           element={
             <PrivateRoute>
               <Suspense fallback={<Loading></Loading>} key={location.pathname}>
                 <Dashboard />
+              </Suspense>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path='/dashboard'
+          element={
+            <PrivateRoute>
+              <Suspense fallback={<Loading></Loading>} key={location.pathname}>
+                <StandaloneDashboard />
               </Suspense>
             </PrivateRoute>
           }

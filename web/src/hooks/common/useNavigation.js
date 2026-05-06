@@ -19,19 +19,31 @@ For commercial licensing, please contact support@quantumnous.com
 
 import { useMemo } from 'react';
 
-export const useNavigation = (t, docsLink, headerNavModules) => {
+export const useNavigation = (t, _docsLink, headerNavModules, userState) => {
   const mainNavLinks = useMemo(() => {
     // 默认配置，如果没有传入配置则显示所有模块
     const defaultModules = {
       home: true,
       console: true,
+      dashboard: true,
+      dengKingRanking: true,
+      tokenManagement: true,
+      usageLogs: true,
+      walletManagement: true,
+      promotionCenter: true,
       pricing: true,
       docs: true,
       about: true,
     };
 
-    // 使用传入的配置或默认配置
     const modules = headerNavModules || defaultModules;
+
+    const isEnabled = (key) => {
+      if (modules[key] === undefined) {
+        return defaultModules[key] === true;
+      }
+      return modules[key] === true;
+    };
 
     const allLinks = [
       {
@@ -45,20 +57,40 @@ export const useNavigation = (t, docsLink, headerNavModules) => {
         to: '/console',
       },
       {
-        text: t('模型广场'),
+        text: t('数据'),
+        itemKey: 'dashboard',
+        to: '/dashboard',
+      },
+      {
+        text: t('令牌'),
+        itemKey: 'tokenManagement',
+        to: '/token-management',
+      },
+      {
+        text: t('日志'),
+        itemKey: 'usageLogs',
+        to: '/usage-logs',
+      },
+      {
+        text: t('钱包'),
+        itemKey: 'walletManagement',
+        to: '/wallet-management',
+      },
+      {
+        text: t('推广'),
+        itemKey: 'promotionCenter',
+        to: '/promotion-center',
+      },
+      {
+        text: t('模型'),
         itemKey: 'pricing',
         to: '/pricing',
       },
-      ...(docsLink
-        ? [
-            {
-              text: t('文档'),
-              itemKey: 'docs',
-              isExternal: true,
-              externalLink: docsLink,
-            },
-          ]
-        : []),
+      {
+        text: t('排行'),
+        itemKey: 'dengKingRanking',
+        to: '/dengwang-ranking',
+      },
       {
         text: t('关于'),
         itemKey: 'about',
@@ -66,10 +98,10 @@ export const useNavigation = (t, docsLink, headerNavModules) => {
       },
     ];
 
-    // 根据配置过滤导航链接
     return allLinks.filter((link) => {
-      if (link.itemKey === 'docs') {
-        return docsLink && modules.docs;
+      if (link.itemKey === 'console') {
+        const isAdminUser = Number(userState?.user?.role || 0) >= 10;
+        return isAdminUser && isEnabled(link.itemKey);
       }
       if (link.itemKey === 'pricing') {
         // 支持新的pricing配置格式
@@ -77,9 +109,9 @@ export const useNavigation = (t, docsLink, headerNavModules) => {
           ? modules.pricing.enabled
           : modules.pricing;
       }
-      return modules[link.itemKey] === true;
+      return isEnabled(link.itemKey);
     });
-  }, [t, docsLink, headerNavModules]);
+  }, [t, headerNavModules, userState]);
 
   return {
     mainNavLinks,

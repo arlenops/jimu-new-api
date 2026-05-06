@@ -29,6 +29,11 @@ import {
   copy,
   getQuotaPerUnit,
 } from '../../helpers';
+import {
+  formatUsdAmount,
+  quotaToUsdAmount,
+  usdAmountToQuota,
+} from '../../helpers/quota';
 import { Modal, Toast } from '@douyinfe/semi-ui';
 import { useTranslation } from 'react-i18next';
 import { UserContext } from '../../context/User';
@@ -40,7 +45,11 @@ import TransferModal from './modals/TransferModal';
 import PaymentConfirmModal from './modals/PaymentConfirmModal';
 import TopupHistoryModal from './modals/TopupHistoryModal';
 
-const TopUp = () => {
+const TopUp = ({
+  embedded = false,
+  showRecharge = true,
+  showInvitation = true,
+}) => {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [userState, userDispatch] = useContext(UserContext);
@@ -547,12 +556,14 @@ const TopUp = () => {
 
   // 划转邀请额度
   const transfer = async () => {
-    if (transferAmount < getQuotaPerUnit()) {
-      showError(t('划转金额最低为') + ' ' + renderQuota(getQuotaPerUnit()));
+    const quotaAmount = usdAmountToQuota(transferAmount);
+    const minTransferUsd = quotaToUsdAmount(getQuotaPerUnit());
+    if (transferAmount < minTransferUsd || quotaAmount < getQuotaPerUnit()) {
+      showError(t('划转金额最低为') + ' ' + formatUsdAmount(minTransferUsd));
       return;
     }
     const res = await API.post(`/api/user/aff_transfer`, {
-      quota: transferAmount,
+      quota: quotaAmount,
     });
     const { success, message } = res.data;
     if (success) {
@@ -582,21 +593,24 @@ const TopUp = () => {
   useEffect(() => {
     // 始终获取最新用户数据，确保余额等统计信息准确
     getUserQuota().then();
-    setTransferAmount(getQuotaPerUnit());
+    if (showInvitation) {
+      setTransferAmount(quotaToUsdAmount(getQuotaPerUnit()));
+    }
   }, []);
 
   useEffect(() => {
-    if (affFetchedRef.current) return;
+    if (!showInvitation || affFetchedRef.current) return;
     affFetchedRef.current = true;
     getAffLink().then();
-  }, []);
+  }, [showInvitation]);
 
   // 在 statusState 可用时获取充值信息
   useEffect(() => {
+    if (!showRecharge) return;
     getTopupInfo().then();
     getSubscriptionPlans().then();
     getSubscriptionSelf().then();
-  }, []);
+  }, [showRecharge]);
 
   useEffect(() => {
     if (statusState?.status) {
@@ -713,7 +727,13 @@ const TopUp = () => {
   };
 
   return (
-    <div className='w-full max-w-7xl mx-auto relative min-h-screen lg:min-h-0 mt-[60px] px-2'>
+    <div
+      className={
+        embedded
+          ? 'relative w-full'
+          : 'w-full max-w-7xl mx-auto relative min-h-screen lg:min-h-0 mt-[60px] px-2'
+      }
+    >
       {/* 划转模态框 */}
       <TransferModal
         t={t}
@@ -727,114 +747,124 @@ const TopUp = () => {
         setTransferAmount={setTransferAmount}
       />
 
-      {/* 充值确认模态框 */}
-      <PaymentConfirmModal
-        t={t}
-        open={open}
-        onlineTopUp={onlineTopUp}
-        handleCancel={handleCancel}
-        confirmLoading={confirmLoading}
-        topUpCount={topUpCount}
-        renderQuotaWithAmount={renderQuotaWithAmount}
-        amountLoading={amountLoading}
-        renderAmount={renderAmount}
-        payWay={payWay}
-        payMethods={payMethods}
-        amountNumber={amount}
-        discountRate={topupInfo?.discount?.[topUpCount] || 1.0}
-      />
+      {showRecharge && (
+        <>
+          <PaymentConfirmModal
+            t={t}
+            open={open}
+            onlineTopUp={onlineTopUp}
+            handleCancel={handleCancel}
+            confirmLoading={confirmLoading}
+            topUpCount={topUpCount}
+            renderQuotaWithAmount={renderQuotaWithAmount}
+            amountLoading={amountLoading}
+            renderAmount={renderAmount}
+            payWay={payWay}
+            payMethods={payMethods}
+            amountNumber={amount}
+            discountRate={topupInfo?.discount?.[topUpCount] || 1.0}
+          />
 
-      {/* 充值账单模态框 */}
-      <TopupHistoryModal
-        visible={openHistory}
-        onCancel={handleHistoryCancel}
-        t={t}
-      />
+          <TopupHistoryModal
+            visible={openHistory}
+            onCancel={handleHistoryCancel}
+            t={t}
+          />
 
-      {/* Creem 充值确认模态框 */}
-      <Modal
-        title={t('确定要充值 $')}
-        visible={creemOpen}
-        onOk={onlineCreemTopUp}
-        onCancel={handleCreemCancel}
-        maskClosable={false}
-        size='small'
-        centered
-        confirmLoading={confirmLoading}
-      >
-        {selectedCreemProduct && (
-          <>
-            <p>
-              {t('产品名称')}：{selectedCreemProduct.name}
-            </p>
-            <p>
-              {t('价格')}：{selectedCreemProduct.currency === 'EUR' ? '€' : '$'}
-              {selectedCreemProduct.price}
-            </p>
-            <p>
-              {t('充值额度')}：{selectedCreemProduct.quota}
-            </p>
-            <p>{t('是否确认充值？')}</p>
-          </>
-        )}
-      </Modal>
+          <Modal
+            title={t('确定要充值 $')}
+            visible={creemOpen}
+            onOk={onlineCreemTopUp}
+            onCancel={handleCreemCancel}
+            maskClosable={false}
+            size='small'
+            centered
+            confirmLoading={confirmLoading}
+          >
+            {selectedCreemProduct && (
+              <>
+                <p>
+                  {t('产品名称')}：{selectedCreemProduct.name}
+                </p>
+                <p>
+                  {t('价格')}：
+                  {selectedCreemProduct.currency === 'EUR' ? '€' : '$'}
+                  {selectedCreemProduct.price}
+                </p>
+                <p>
+                  {t('充值额度')}：{selectedCreemProduct.quota}
+                </p>
+                <p>{t('是否确认充值？')}</p>
+              </>
+            )}
+          </Modal>
+        </>
+      )}
 
       {/* 主布局区域 */}
-      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
-        <RechargeCard
-          t={t}
-          enableOnlineTopUp={enableOnlineTopUp}
-          enableStripeTopUp={enableStripeTopUp}
-          enableCreemTopUp={enableCreemTopUp}
-          creemProducts={creemProducts}
-          creemPreTopUp={creemPreTopUp}
-          enableWaffoTopUp={enableWaffoTopUp}
-          waffoTopUp={waffoTopUp}
-          waffoPayMethods={waffoPayMethods}
-          presetAmounts={presetAmounts}
-          selectedPreset={selectedPreset}
-          selectPresetAmount={selectPresetAmount}
-          formatLargeNumber={formatLargeNumber}
-          priceRatio={priceRatio}
-          topUpCount={topUpCount}
-          minTopUp={minTopUp}
-          renderQuotaWithAmount={renderQuotaWithAmount}
-          getAmount={getAmount}
-          setTopUpCount={setTopUpCount}
-          setSelectedPreset={setSelectedPreset}
-          renderAmount={renderAmount}
-          amountLoading={amountLoading}
-          payMethods={payMethods}
-          preTopUp={preTopUp}
-          paymentLoading={paymentLoading}
-          payWay={payWay}
-          redemptionCode={redemptionCode}
-          setRedemptionCode={setRedemptionCode}
-          topUp={topUp}
-          isSubmitting={isSubmitting}
-          topUpLink={topUpLink}
-          openTopUpLink={openTopUpLink}
-          userState={userState}
-          renderQuota={renderQuota}
-          statusLoading={statusLoading}
-          topupInfo={topupInfo}
-          onOpenHistory={handleOpenHistory}
-          subscriptionLoading={subscriptionLoading}
-          subscriptionPlans={subscriptionPlans}
-          billingPreference={billingPreference}
-          onChangeBillingPreference={updateBillingPreference}
-          activeSubscriptions={activeSubscriptions}
-          allSubscriptions={allSubscriptions}
-          reloadSubscriptionSelf={getSubscriptionSelf}
-        />
-        <InvitationCard
-          t={t}
-          userState={userState}
-          renderQuota={renderQuota}
-          setOpenTransfer={setOpenTransfer}
-          affLink={affLink}
-          handleAffLinkClick={handleAffLinkClick}
-        />
+      <div
+        className={`grid grid-cols-1 gap-6 ${showRecharge && showInvitation ? 'lg:grid-cols-2' : ''}`}
+      >
+        {showRecharge && (
+          <RechargeCard
+            standalone={embedded}
+            t={t}
+            enableOnlineTopUp={enableOnlineTopUp}
+            enableStripeTopUp={enableStripeTopUp}
+            enableCreemTopUp={enableCreemTopUp}
+            creemProducts={creemProducts}
+            creemPreTopUp={creemPreTopUp}
+            enableWaffoTopUp={enableWaffoTopUp}
+            waffoTopUp={waffoTopUp}
+            waffoPayMethods={waffoPayMethods}
+            presetAmounts={presetAmounts}
+            selectedPreset={selectedPreset}
+            selectPresetAmount={selectPresetAmount}
+            formatLargeNumber={formatLargeNumber}
+            priceRatio={priceRatio}
+            topUpCount={topUpCount}
+            minTopUp={minTopUp}
+            renderQuotaWithAmount={renderQuotaWithAmount}
+            getAmount={getAmount}
+            setTopUpCount={setTopUpCount}
+            setSelectedPreset={setSelectedPreset}
+            renderAmount={renderAmount}
+            amountLoading={amountLoading}
+            payMethods={payMethods}
+            preTopUp={preTopUp}
+            paymentLoading={paymentLoading}
+            payWay={payWay}
+            redemptionCode={redemptionCode}
+            setRedemptionCode={setRedemptionCode}
+            topUp={topUp}
+            isSubmitting={isSubmitting}
+            topUpLink={topUpLink}
+            openTopUpLink={openTopUpLink}
+            userState={userState}
+            renderQuota={renderQuota}
+            statusLoading={statusLoading}
+            topupInfo={topupInfo}
+            onOpenHistory={handleOpenHistory}
+            subscriptionLoading={subscriptionLoading}
+            subscriptionPlans={subscriptionPlans}
+            billingPreference={billingPreference}
+            onChangeBillingPreference={updateBillingPreference}
+            activeSubscriptions={activeSubscriptions}
+            allSubscriptions={allSubscriptions}
+            reloadSubscriptionSelf={getSubscriptionSelf}
+          />
+        )}
+        {showInvitation && (
+          <InvitationCard
+            standalone={embedded}
+            t={t}
+            userState={userState}
+            renderQuota={renderQuota}
+            setOpenTransfer={setOpenTransfer}
+            affLink={affLink}
+            handleAffLinkClick={handleAffLinkClick}
+          />
+        )}
       </div>
     </div>
   );

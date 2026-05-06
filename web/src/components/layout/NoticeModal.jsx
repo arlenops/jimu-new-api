@@ -174,7 +174,7 @@ const NoticeModal = ({
             const htmlExtra = item.extra ? marked.parse(item.extra) : '';
             return (
               <Timeline.Item
-                key={idx}
+              key={idx}
                 type={item.type}
                 time={`${item.relative ? item.relative + ' ' : ''}${item.time}`}
                 extra={
@@ -210,6 +210,7 @@ const NoticeModal = ({
 
   return (
     <Modal
+      className='va-notice-modal'
       title={
         <div className='flex items-center justify-between w-full'>
           <span>{t('系统公告')}</span>

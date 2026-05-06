@@ -14,7 +14,6 @@ import (
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/setting"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
-	"github.com/QuantumNous/new-api/setting/system_setting"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stripe/stripe-go/v81"
@@ -36,10 +35,10 @@ type StripePayRequest struct {
 	// PaymentMethod specifies the payment method (e.g., "stripe").
 	PaymentMethod string `json:"payment_method"`
 	// SuccessURL is the optional custom URL to redirect after successful payment.
-	// If empty, defaults to the server's console log page.
+	// If empty, defaults to the wallet management page.
 	SuccessURL string `json:"success_url,omitempty"`
 	// CancelURL is the optional custom URL to redirect when payment is canceled.
-	// If empty, defaults to the server's console topup page.
+	// If empty, defaults to the wallet management page.
 	CancelURL string `json:"cancel_url,omitempty"`
 }
 
@@ -146,6 +145,12 @@ func RequestStripePay(c *gin.Context) {
 }
 
 func StripeWebhook(c *gin.Context) {
+	if setting.StripeWebhookSecret == "" {
+		log.Println("Stripe Webhook Secret 未配置，拒绝处理")
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
 	payload, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Printf("解析Stripe Webhook参数失败: %v\n", err)
@@ -154,8 +159,7 @@ func StripeWebhook(c *gin.Context) {
 	}
 
 	signature := c.GetHeader("Stripe-Signature")
-	endpointSecret := setting.StripeWebhookSecret
-	event, err := webhook.ConstructEventWithOptions(payload, signature, endpointSecret, webhook.ConstructEventOptions{
+	event, err := webhook.ConstructEventWithOptions(payload, signature, setting.StripeWebhookSecret, webhook.ConstructEventOptions{
 		IgnoreAPIVersionMismatch: true,
 	})
 
@@ -170,6 +174,10 @@ func StripeWebhook(c *gin.Context) {
 		sessionCompleted(event)
 	case stripe.EventTypeCheckoutSessionExpired:
 		sessionExpired(event)
+	case stripe.EventTypeCheckoutSessionAsyncPaymentSucceeded:
+		sessionAsyncPaymentSucceeded(event)
+	case stripe.EventTypeCheckoutSessionAsyncPaymentFailed:
+		sessionAsyncPaymentFailed(event)
 	default:
 		log.Printf("不支持的Stripe Webhook事件类型: %s\n", event.Type)
 	}
@@ -186,7 +194,60 @@ func sessionCompleted(event stripe.Event) {
 		return
 	}
 
-	// Try complete subscription order first
+	paymentStatus := event.GetObjectValue("payment_status")
+	if paymentStatus != "paid" {
+		log.Printf("Stripe Checkout 支付尚未完成，payment_status: %s, ref: %s（等待异步支付结果）", paymentStatus, referenceId)
+		return
+	}
+
+	fulfillOrder(event, referenceId, customerId)
+}
+
+func sessionAsyncPaymentSucceeded(event stripe.Event) {
+	customerId := event.GetObjectValue("customer")
+	referenceId := event.GetObjectValue("client_reference_id")
+	log.Printf("Stripe 异步支付成功: %s", referenceId)
+
+	fulfillOrder(event, referenceId, customerId)
+}
+
+func sessionAsyncPaymentFailed(event stripe.Event) {
+	referenceId := event.GetObjectValue("client_reference_id")
+	log.Printf("Stripe 异步支付失败: %s", referenceId)
+
+	if len(referenceId) == 0 {
+		log.Println("异步支付失败事件未提供支付单号")
+		return
+	}
+
+	LockOrder(referenceId)
+	defer UnlockOrder(referenceId)
+
+	topUp := model.GetTopUpByTradeNo(referenceId)
+	if topUp == nil {
+		log.Println("异步支付失败，充值订单不存在:", referenceId)
+		return
+	}
+
+	if topUp.Status != common.TopUpStatusPending {
+		log.Printf("异步支付失败，订单状态非pending: %s, ref: %s", topUp.Status, referenceId)
+		return
+	}
+
+	topUp.Status = common.TopUpStatusFailed
+	if err := topUp.Update(); err != nil {
+		log.Printf("标记充值订单失败出错: %v, ref: %s", err, referenceId)
+		return
+	}
+	log.Printf("充值订单已标记为失败: %s", referenceId)
+}
+
+func fulfillOrder(event stripe.Event, referenceId string, customerId string) {
+	if len(referenceId) == 0 {
+		log.Println("未提供支付单号")
+		return
+	}
+
 	LockOrder(referenceId)
 	defer UnlockOrder(referenceId)
 	payload := map[string]any{
@@ -277,10 +338,10 @@ func genStripeLink(referenceId string, customerId string, email string, amount i
 
 	// Use custom URLs if provided, otherwise use defaults
 	if successURL == "" {
-		successURL = system_setting.ServerAddress + "/console/log"
+		successURL = walletManagementURL("show_history=true")
 	}
 	if cancelURL == "" {
-		cancelURL = system_setting.ServerAddress + "/console/topup"
+		cancelURL = walletManagementURL("")
 	}
 
 	params := &stripe.CheckoutSessionParams{

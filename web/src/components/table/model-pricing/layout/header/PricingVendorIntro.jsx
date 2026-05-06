@@ -84,8 +84,14 @@ const getVendorDisplayName = (vendorName, t) => {
     : vendorName;
 };
 
-const createDefaultAvatar = () => (
-  <div className={COMPONENT_STYLES.avatarContainer}>
+const createDefaultAvatar = (standalone = false) => (
+  <div
+    className={
+      standalone
+        ? 'va-pricing-hero-avatar'
+        : COMPONENT_STYLES.avatarContainer
+    }
+  >
     <Avatar size='large' color='transparent'>
       AI
     </Avatar>
@@ -117,9 +123,14 @@ const createAvatarContent = (vendor, isAllVendors) => {
   );
 };
 
-const renderVendorAvatar = (vendor, t, isAllVendors = false) => {
+const renderVendorAvatar = (
+  vendor,
+  t,
+  isAllVendors = false,
+  standalone = false,
+) => {
   if (!vendor) {
-    return createDefaultAvatar();
+    return createDefaultAvatar(standalone);
   }
 
   const displayName = getVendorDisplayName(vendor.name, t);
@@ -127,7 +138,15 @@ const renderVendorAvatar = (vendor, t, isAllVendors = false) => {
 
   return (
     <Tooltip content={displayName} position='top'>
-      <div className={COMPONENT_STYLES.avatarContainer}>{avatarContent}</div>
+      <div
+        className={
+          standalone
+            ? 'va-pricing-hero-avatar'
+            : COMPONENT_STYLES.avatarContainer
+        }
+      >
+        {avatarContent}
+      </div>
     </Tooltip>
   );
 };
@@ -156,6 +175,7 @@ const PricingVendorIntro = memo(
     setViewMode,
     tokenUnit,
     setTokenUnit,
+    standalone = false,
   }) => {
     const [currentOffset, setCurrentOffset] = useState(0);
     const [descModalVisible, setDescModalVisible] = useState(false);
@@ -261,13 +281,20 @@ const PricingVendorIntro = memo(
 
     const createCoverStyle = useCallback(
       (primaryColor) => ({
-        '--palette-primary-darkerChannel': primaryColor,
-        backgroundImage: `linear-gradient(0deg, rgba(var(--palette-primary-darkerChannel) / 80%), rgba(var(--palette-primary-darkerChannel) / 80%)), url('/cover-4.webp')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
+        ...(standalone
+          ? {
+              background:
+                'radial-gradient(circle at 16% 18%, rgba(0,178,107,0.16), transparent 26%), radial-gradient(circle at 84% 22%, rgba(48,108,206,0.12), transparent 30%), linear-gradient(135deg, rgba(244,250,245,0.98) 0%, rgba(236,244,239,0.96) 100%)',
+            }
+          : {
+              '--palette-primary-darkerChannel': primaryColor,
+              backgroundImage: `linear-gradient(0deg, rgba(var(--palette-primary-darkerChannel) / 80%), rgba(var(--palette-primary-darkerChannel) / 80%)), url('/cover-4.webp')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+            }),
       }),
-      [],
+      [standalone],
     );
 
     const renderSearchActions = useCallback(
@@ -291,6 +318,7 @@ const PricingVendorIntro = memo(
           setViewMode={setViewMode}
           tokenUnit={tokenUnit}
           setTokenUnit={setTokenUnit}
+          standalone={standalone}
           t={t}
         />
       ),
@@ -320,7 +348,7 @@ const PricingVendorIntro = memo(
     const renderHeaderCard = useCallback(
       ({ title, count, description, rightContent, primaryDarkerChannel }) => (
         <Card
-          className='!rounded-2xl shadow-sm border-0'
+          className={`!rounded-2xl shadow-sm border-0 ${standalone ? 'va-pricing-hero-card' : ''}`}
           cover={
             <div
               className='relative h-full'
@@ -331,12 +359,25 @@ const PricingVendorIntro = memo(
                   <div className='flex flex-row flex-wrap items-center gap-2 sm:gap-3 mb-2'>
                     <h2
                       className='text-lg sm:text-xl font-bold truncate'
-                      style={COMPONENT_STYLES.titleText}
+                      style={
+                        standalone
+                          ? { color: 'var(--va-text)' }
+                          : COMPONENT_STYLES.titleText
+                      }
                     >
                       {title}
                     </h2>
                     <Tag
-                      style={COMPONENT_STYLES.tag}
+                      style={
+                        standalone
+                          ? {
+                              backgroundColor: 'rgba(255,255,255,0.84)',
+                              color: 'var(--va-text)',
+                              border: '1px solid rgba(15,23,42,0.08)',
+                              fontWeight: '500',
+                            }
+                          : COMPONENT_STYLES.tag
+                      }
                       shape='circle'
                       size='small'
                       className='self-center'
@@ -346,7 +387,11 @@ const PricingVendorIntro = memo(
                   </div>
                   <Paragraph
                     className='text-xs sm:text-sm leading-relaxed !mb-0 cursor-pointer'
-                    style={COMPONENT_STYLES.descriptionText}
+                    style={
+                      standalone
+                        ? { color: 'var(--va-text-muted)' }
+                        : COMPONENT_STYLES.descriptionText
+                    }
                     ellipsis={{ rows: 2 }}
                     onClick={() => handleOpenDescModal(description)}
                   >
@@ -362,7 +407,7 @@ const PricingVendorIntro = memo(
           {renderSearchActions()}
         </Card>
       ),
-      [renderSearchActions, createCoverStyle, handleOpenDescModal, t],
+      [renderSearchActions, createCoverStyle, handleOpenDescModal, standalone, t],
     );
 
     const renderAllVendorsAvatar = useCallback(() => {
@@ -370,8 +415,8 @@ const PricingVendorIntro = memo(
         vendorInfo.length > 0
           ? vendorInfo[currentOffset % vendorInfo.length]
           : null;
-      return renderVendorAvatar(currentVendor, t, true);
-    }, [vendorInfo, currentOffset, t]);
+      return renderVendorAvatar(currentVendor, t, true, standalone);
+    }, [vendorInfo, currentOffset, standalone, t]);
 
     if (filterVendor === 'all') {
       const headerCard = renderHeaderCard({
@@ -401,7 +446,7 @@ const PricingVendorIntro = memo(
       count: currentModelCount,
       description:
         currentVendor.description || getVendorDescription(currentVendor.name),
-      rightContent: renderVendorAvatar(currentVendor, t, false),
+      rightContent: renderVendorAvatar(currentVendor, t, false, standalone),
       primaryDarkerChannel: THEME_COLORS.specific.primary,
     });
 

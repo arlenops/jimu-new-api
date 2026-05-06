@@ -3,8 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="/logo.png" />
+    <link rel="shortcut icon" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#ffffff" />
+    <meta name="color-scheme" content="light" />
     <meta
       name="description"
       lang="zh"
@@ -17,6 +20,30 @@
     />
     <meta name="generator" content="new-api" />
     <title>New API</title>
+    <script>
+      (function () {
+        try {
+          var systemName = localStorage.getItem('system_name');
+          var logo = localStorage.getItem('logo');
+
+          if (systemName) {
+            document.title = systemName;
+          }
+
+          if (logo) {
+            ['icon', 'shortcut icon', 'apple-touch-icon'].forEach(function (rel) {
+              var link = document.querySelector('link[rel="' + rel + '"]');
+              if (!link) {
+                link = document.createElement('link');
+                link.rel = rel;
+                document.head.appendChild(link);
+              }
+              link.href = logo;
+            });
+          }
+        } catch (error) {}
+      })();
+    </script>
     <!--umami-->
     <!--Google Analytics-->
   </head>
