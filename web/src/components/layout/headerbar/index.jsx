@@ -22,6 +22,7 @@ import { useHeaderBar } from '../../../hooks/common/useHeaderBar';
 import { useNotifications } from '../../../hooks/common/useNotifications';
 import { useNavigation } from '../../../hooks/common/useNavigation';
 import NoticeModal from '../NoticeModal';
+import TopActivityBanner from '../TopActivityBanner';
 import MobileMenuButton from './MobileMenuButton';
 import HeaderLogo from './HeaderLogo';
 import Navigation from './Navigation';
@@ -140,6 +141,7 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
           </div>
         </div>
       </div>
+      <TopActivityBanner banner={statusState?.status?.top_activity_banner} />
     </header>
   );
 };

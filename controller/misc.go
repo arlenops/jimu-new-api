@@ -126,6 +126,14 @@ func GetStatus(c *gin.Context) {
 	if cs.AnnouncementsEnabled {
 		data["announcements"] = console_setting.GetAnnouncements()
 	}
+	topActivityBanner := console_setting.GetTopActivityBanner()
+	if topActivityBanner.Enabled {
+		data["top_activity_banner"] = topActivityBanner
+	} else {
+		data["top_activity_banner"] = gin.H{
+			"enabled": false,
+		}
+	}
 	if cs.FAQEnabled {
 		data["faq"] = console_setting.GetFAQ()
 	}
